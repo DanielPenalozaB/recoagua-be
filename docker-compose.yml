@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: recoagua_postgres
+    environment:
+      POSTGRES_USER: ${DB_USERNAME:-recoagua_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-recoagua_password}
+      POSTGRES_DB: ${DB_DATABASE:-recoagua_db}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    networks:
+      - recoagua_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-recoagua_user} -d ${DB_DATABASE:-recoagua_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    container_name: recoagua_app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_HOST: postgres
+      DB_PORT: ${DB_PORT:-5432}
+      DB_USERNAME: ${DB_USERNAME:-recoagua_user}
+      DB_PASSWORD: ${DB_PASSWORD:-recoagua_password}
+      DB_DATABASE: ${DB_DATABASE:-recoagua_db}
+      APP_PORT: ${APP_PORT:-4000}
+      NODE_ENV: ${NODE_ENV:-development}
+    ports:
+      - "${APP_PORT:-4000}:${APP_PORT:-4000}"
+    networks:
+      - recoagua_network
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
+    command: npm run start:${NODE_ENV:-dev}
+
+volumes:
+  postgres_data:
+
+networks:
+  recoagua_network:
+    driver: bridge
