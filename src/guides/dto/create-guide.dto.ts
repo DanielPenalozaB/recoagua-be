@@ -1,6 +1,7 @@
 import { IsString, IsEnum, IsNumber, IsOptional, MinLength, Min } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { GuideDifficulty, GuideStatus } from '../entities/guide.entity';
+import { GuideDifficulty } from '../enums/guide-difficulty.enum';
+import { GuideStatus } from '../enums/guide-status.enum';
 
 export class CreateGuideDto {
   @ApiProperty({ example: 'Water Conservation Basics' })

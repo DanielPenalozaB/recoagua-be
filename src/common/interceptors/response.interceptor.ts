@@ -12,11 +12,21 @@ import { ApiResponse } from '../interfaces/api-response.interface';
 export class ResponseInterceptor<T> implements NestInterceptor<T, ApiResponse<T>> {
   intercept(context: ExecutionContext, next: CallHandler): Observable<ApiResponse<T>> {
     return next.handle().pipe(
-      map((data) => ({
-        success: true,
-        message: 'Operation successful',
-        data,
-      })),
+      map((data) => {
+        if (data.meta) {
+          return {
+            success: true,
+            message: 'Operation successful',
+            data: data.data,
+            meta: data.meta,
+          };
+        }
+
+        return {
+          success: true,
+          message: 'Operation successful',
+          data,
+      }}),
     );
   }
 }

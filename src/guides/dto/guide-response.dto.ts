@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { GuideDifficulty, GuideStatus } from '../entities/guide.entity';
 import { ModuleResponseDto } from 'src/modules/dto/module-response.dto';
+import { GuideDifficulty } from '../enums/guide-difficulty.enum';
+import { GuideStatus } from '../enums/guide-status.enum';
 
 export class GuideResponseDto {
   @ApiProperty()

@@ -39,7 +39,7 @@ export class UserChallenge {
   })
   completionStatus: ChallengeCompletionStatus;
 
-  @Column({ name: 'completed_at', type: 'timestamp', nullable: true })
+  @Column({ type: 'timestamp', nullable: true })
   @ApiProperty({
     example: '2023-01-01T00:00:00.000Z',
     description: 'When the challenge was completed',
@@ -47,6 +47,6 @@ export class UserChallenge {
   })
   completedAt: Date;
 
-  @CreateDateColumn({ name: 'created_at' })
+  @CreateDateColumn()
   createdAt: Date;
 }

@@ -33,10 +33,14 @@ export async function paginate<T extends ObjectLiteral>(
 export function applySort<T extends ObjectLiteral>(
   queryBuilder: SelectQueryBuilder<T>,
   sortBy: string,
-  sortDirection: 'ASC' | 'DESC'
+  sortDirection: 'ASC' | 'DESC',
+  alias?: string
 ): SelectQueryBuilder<T> {
   if (sortBy) {
-    const sortField = sortBy.includes('.') ? sortBy : `entity.${sortBy}`;
+    let sortField = sortBy;
+    if (!sortBy.includes('.') && alias) {
+      sortField = `${alias}.${sortBy}`;
+    }
     queryBuilder.orderBy(sortField, sortDirection);
   }
   return queryBuilder;

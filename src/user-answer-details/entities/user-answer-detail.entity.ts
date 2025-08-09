@@ -27,7 +27,7 @@ export class UserAnswerDetails {
   @ManyToOne(() => BlockAnswer, { onDelete: 'SET NULL', nullable: true })
   answer: BlockAnswer;
 
-  @Column({ name: 'custom_answer', type: 'text', nullable: true })
+  @Column({ type: 'text', nullable: true })
   @ApiProperty({
     example: 'My custom response',
     description: 'Custom text answer',
@@ -38,6 +38,6 @@ export class UserAnswerDetails {
   @ManyToOne(() => RelationalPair, { onDelete: 'SET NULL', nullable: true })
   relationalPair: RelationalPair;
 
-  @CreateDateColumn({ name: 'created_at' })
+  @CreateDateColumn()
   createdAt: Date;
 }

@@ -61,11 +61,11 @@ export class Zone {
   })
   altitude: number;
 
-  @Column({ name: 'soil_type', nullable: true })
+  @Column({ nullable: true })
   @ApiProperty({ example: 'clay', description: 'Type of soil in the zone', required: false })
   soilType: string;
 
-  @Column({ name: 'avg_temperature', type: 'float', nullable: true })
+  @Column({ type: 'float', nullable: true })
   @ApiProperty({
     example: 14.5,
     description: 'Average temperature in Celsius',
@@ -76,12 +76,12 @@ export class Zone {
   @ManyToOne(() => City, (city) => city.zones, { onDelete: 'CASCADE' })
   city: City;
 
-  @CreateDateColumn({ name: 'created_at', type: 'timestamp with time zone' })
+  @CreateDateColumn({ type: 'timestamp with time zone' })
   createdAt: Date;
 
-  @UpdateDateColumn({ name: 'updated_at', type: 'timestamp with time zone' })
+  @UpdateDateColumn({ type: 'timestamp with time zone' })
   updatedAt: Date;
 
-  @DeleteDateColumn({ name: 'deleted_at', type: 'timestamp with time zone' })
+  @DeleteDateColumn({ type: 'timestamp with time zone' })
   deletedAt: Date;
 }

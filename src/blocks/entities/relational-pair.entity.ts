@@ -20,30 +20,30 @@ export class RelationalPair {
   })
   block: Block;
 
-  @Column({ name: 'left_item', type: 'text' })
+  @Column({ type: 'text' })
   @ApiProperty({
     example: 'Evaporation',
     description: 'The left item in the pair',
   })
   leftItem: string;
 
-  @Column({ name: 'right_item', type: 'text' })
+  @Column({ type: 'text' })
   @ApiProperty({
     example: 'Water turns into vapor',
     description: 'The right item in the pair',
   })
   rightItem: string;
 
-  @Column({ name: 'correct_pair' })
+  @Column()
   @ApiProperty({
     example: true,
     description: 'Whether this is a correct pairing',
   })
   correctPair: boolean;
 
-  @CreateDateColumn({ name: 'created_at' })
+  @CreateDateColumn()
   createdAt: Date;
 
-  @UpdateDateColumn({ name: 'updated_at' })
+  @UpdateDateColumn()
   updatedAt: Date;
 }

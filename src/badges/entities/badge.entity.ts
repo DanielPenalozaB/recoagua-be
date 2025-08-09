@@ -32,7 +32,7 @@ export class Badge {
   })
   description: string;
 
-  @Column({ name: 'image_url', nullable: true })
+  @Column({ nullable: true })
   @ApiProperty({
     example: 'https://example.com/badges/water-hero.png',
     description: 'URL to badge image',
@@ -51,13 +51,13 @@ export class Badge {
   @ApiProperty({ enum: Status, description: 'Status of the badge' })
   status: Status;
 
-  @CreateDateColumn({ name: 'created_at' })
+  @CreateDateColumn()
   createdAt: Date;
 
-  @UpdateDateColumn({ name: 'updated_at' })
+  @UpdateDateColumn()
   updatedAt: Date;
 
-  @DeleteDateColumn({ name: 'deleted_at' })
+  @DeleteDateColumn()
   deletedAt: Date;
 
   @OneToMany(() => UserBadge, (userBadge) => userBadge.badge)

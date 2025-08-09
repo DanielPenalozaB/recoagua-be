@@ -28,7 +28,7 @@ export class UserBlockResponse {
   })
   block: Block;
 
-  @Column({ name: 'is_correct' })
+  @Column()
   @ApiProperty({
     example: true,
     description: 'Whether the response was correct',
@@ -46,7 +46,7 @@ export class UserBlockResponse {
   })
   submittedAt: Date;
 
-  @CreateDateColumn({ name: 'created_at' })
+  @CreateDateColumn()
   createdAt: Date;
 
   @OneToOne(() => UserAnswerDetails, (details) => details.response)

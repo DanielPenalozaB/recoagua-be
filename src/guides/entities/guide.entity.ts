@@ -10,18 +10,8 @@ import {
 import { ApiProperty } from '@nestjs/swagger';
 import { Module } from '../../modules/entities/module.entity';
 import { UserProgress } from '../../user-progress/entities/user-progress.entity';
-
-export enum GuideDifficulty {
-  BEGINNER = 'beginner',
-  INTERMEDIATE = 'intermediate',
-  ADVANCED = 'advanced',
-}
-
-export enum GuideStatus {
-  DRAFT = 'draft',
-  PUBLISHED = 'published',
-  ARCHIVED = 'archived',
-}
+import { GuideDifficulty } from '../enums/guide-difficulty.enum';
+import { GuideStatus } from '../enums/guide-status.enum';
 
 @Entity()
 export class Guide {
@@ -53,7 +43,7 @@ export class Guide {
   })
   difficulty: GuideDifficulty;
 
-  @Column({ name: 'estimated_duration' })
+  @Column()
   @ApiProperty({ example: 60, description: 'Estimated duration in minutes' })
   estimatedDuration: number;
 
@@ -68,20 +58,20 @@ export class Guide {
   @ApiProperty({ example: 'es', description: 'Language of the guide content' })
   language: string;
 
-  @Column({ name: 'total_points' })
+  @Column()
   @ApiProperty({
     example: 100,
     description: 'Total points achievable from this guide',
   })
   totalPoints: number;
 
-  @CreateDateColumn({ name: 'created_at' })
+  @CreateDateColumn()
   createdAt: Date;
 
-  @UpdateDateColumn({ name: 'updated_at' })
+  @UpdateDateColumn()
   updatedAt: Date;
 
-  @DeleteDateColumn({ name: 'deleted_at' })
+  @DeleteDateColumn()
   deletedAt: Date;
 
   @OneToMany(() => Module, (module) => module.guide)

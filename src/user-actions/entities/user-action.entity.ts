@@ -21,7 +21,7 @@ export class UserAction {
   @ManyToOne(() => User, (user) => user.actions, { onDelete: 'CASCADE' })
   user: User;
 
-  @Column({ name: 'action_type', type: 'enum', enum: UserActionType })
+  @Column({ type: 'enum', enum: UserActionType })
   @ApiProperty({
     enum: UserActionType,
     description: 'Type of action performed',
@@ -47,7 +47,7 @@ export class UserAction {
   })
   performedAt: Date;
 
-  @Column({ name: 'ip_address', nullable: true })
+  @Column({ nullable: true })
   @ApiProperty({
     example: '192.168.1.1',
     description: 'IP address from which the action was performed',
@@ -55,6 +55,6 @@ export class UserAction {
   })
   ipAddress: string;
 
-  @CreateDateColumn({ name: 'created_at' })
+  @CreateDateColumn()
   createdAt: Date;
 }

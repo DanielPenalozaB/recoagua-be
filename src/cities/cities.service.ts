@@ -57,8 +57,7 @@ export class CitiesService {
 
     // Apply search - now safely passing string (empty string if undefined)
     applySearch(queryBuilder, search, [
-      'city.name',
-      'city.email'
+      'city.name'
     ]);
 
     // Apply filters

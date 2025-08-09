@@ -35,11 +35,10 @@ export class User {
   @Column({ type: 'varchar' })
   password: string;
 
-  @Column({ name: 'password_set', type: 'boolean', default: false })
+  @Column({ type: 'boolean', default: false })
   passwordSet: boolean;
 
   @Column({
-    name: 'password_reset_token',
     type: 'varchar',
     nullable: true,
     select: false,
@@ -48,21 +47,19 @@ export class User {
   passwordResetToken: string | null;
 
   @Column({
-    name: 'password_reset_expires',
     type: 'timestamp with time zone',
     nullable: true
   })
   passwordResetExpires: Date | null;
 
   @Column({
-    name: 'email_confirmation_token',
     type: 'varchar',
     nullable: true,
     length: 255
   })
   emailConfirmationToken: string | null;
 
-  @Column({ name: 'email_confirmed', type: 'boolean', default: false })
+  @Column({ type: 'boolean', default: false })
   emailConfirmed: boolean;
 
   @Column({ type: 'text', nullable: true })
@@ -84,13 +81,13 @@ export class User {
   @ApiProperty({ enum: UserStatus, description: 'The status of the user account' })
   status: UserStatus;
 
-  @CreateDateColumn({ name: 'created_at', type: 'timestamp with time zone' })
+  @CreateDateColumn({ type: 'timestamp with time zone' })
   createdAt: Date;
 
-  @UpdateDateColumn({ name: 'updated_at', type: 'timestamp with time zone' })
+  @UpdateDateColumn({ type: 'timestamp with time zone' })
   updatedAt: Date;
 
-  @DeleteDateColumn({ name: 'deleted_at', type: 'timestamp with time zone' })
+  @DeleteDateColumn({ type: 'timestamp with time zone' })
   deletedAt: Date | null;
 
   // Relations

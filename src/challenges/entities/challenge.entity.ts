@@ -61,17 +61,17 @@ export class Challenge {
   })
   status: ChallengeStatus;
 
-  @Column({ name: 'challenge_type', type: 'enum', enum: ChallengeType })
+  @Column({ type: 'enum', enum: ChallengeType })
   @ApiProperty({ enum: ChallengeType, description: 'Type of challenge' })
   challengeType: ChallengeType;
 
-  @CreateDateColumn({ name: 'created_at' })
+  @CreateDateColumn()
   createdAt: Date;
 
-  @UpdateDateColumn({ name: 'updated_at' })
+  @UpdateDateColumn()
   updatedAt: Date;
 
-  @DeleteDateColumn({ name: 'deleted_at' })
+  @DeleteDateColumn()
   deletedAt: Date;
 
   @OneToMany(() => UserChallenge, (userChallenge) => userChallenge.challenge)

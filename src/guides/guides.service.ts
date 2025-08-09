@@ -1,10 +1,16 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Guide, GuideStatus } from './entities/guide.entity';
+import { Guide } from './entities/guide.entity';
 import { CreateGuideDto } from './dto/create-guide.dto';
 import { UpdateGuideDto } from './dto/update-guide.dto';
 import { UserProgress } from '../user-progress/entities/user-progress.entity';
+import { GuideFilterDto } from './dto/guide-filter.dto';
+import { PaginationDto } from 'src/common/dto/pagination.dto';
+import { CityResponseDto } from 'src/cities/dto/city-response.dto';
+import { applySearch, applySort, paginate } from 'src/common/utils/pagination.util';
+import { GuideResponseDto } from './dto/guide-response.dto';
+import { GuideStatus } from './enums/guide-status.enum';
 
 @Injectable()
 export class GuidesService {
@@ -20,21 +26,38 @@ export class GuidesService {
     return await this.guideRepository.save(guide);
   }
 
-  async findAll(status?: GuideStatus, language?: string): Promise<Guide[]> {
+  async findAll(
+    filterDto: GuideFilterDto
+  ): Promise<PaginationDto<CityResponseDto>> {
+    const {
+      page = 1,
+      limit = 10,
+      search = '',
+      sortBy = 'guide.updatedAt',
+      sortDirection = 'DESC',
+    } = filterDto;
+
     const queryBuilder = this.guideRepository
-      .createQueryBuilder('guide')
-      .leftJoinAndSelect('guide.modules', 'modules')
-      .orderBy('guide.createdAt', 'DESC');
+      .createQueryBuilder('guide');
 
-    if (status) {
-      queryBuilder.andWhere('guide.status = :status', { status });
-    }
+    // Apply search - now safely passing string (empty string if undefined)
+    applySearch(queryBuilder, search, [
+      'guide.name'
+    ]);
 
-    if (language) {
-      queryBuilder.andWhere('guide.language = :language', { language });
-    }
+    // Apply sorting - now safely passing strings
+    applySort(queryBuilder, sortBy, sortDirection);
 
-    return await queryBuilder.getMany();
+    // Execute pagination
+    const result = await paginate<Guide>(queryBuilder, page, limit);
+
+    // Convert to DTO
+    const data = result.data.map((guide) => this.toResponseDto(guide));
+
+    return {
+      data,
+      meta: result.meta
+    };
   }
 
   async findOne(id: number, includeModules = true): Promise<Guide> {
@@ -51,7 +74,7 @@ export class GuidesService {
     }
 
     const guide = await queryBuilder.getOne();
-    
+
     if (!guide) {
       throw new NotFoundException(`Guide with ID ${id} not found`);
     }
@@ -72,7 +95,7 @@ export class GuidesService {
 
   async publish(id: number): Promise<Guide> {
     const guide = await this.findOne(id);
-    
+
     if (guide.modules.length === 0) {
       throw new BadRequestException('Cannot publish guide without modules');
     }
@@ -93,7 +116,7 @@ export class GuidesService {
 
   async getGuideStats(id: number) {
     const guide = await this.findOne(id);
-    
+
     const totalUsers = await this.userProgressRepository
       .createQueryBuilder('progress')
       .where('progress.guide.id = :id', { id })
@@ -112,6 +135,21 @@ export class GuidesService {
       totalUsers,
       completedUsers,
       completionRate: totalUsers > 0 ? (completedUsers / totalUsers) * 100 : 0,
+    };
+  }
+
+  private toResponseDto(guide: Guide): GuideResponseDto {
+    return {
+      id: guide.id,
+      name: guide.name,
+      description: guide.description,
+      difficulty: guide.difficulty,
+      estimatedDuration: guide.estimatedDuration,
+      status: guide.status,
+      language: guide.language,
+      totalPoints: guide.totalPoints,
+      createdAt: guide.createdAt,
+      updatedAt: guide.updatedAt,
     };
   }
 }

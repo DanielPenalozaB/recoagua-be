@@ -52,7 +52,7 @@ export class Block {
   })
   description: string;
 
-  @Column({ name: 'resource_url', nullable: true })
+  @Column({ nullable: true })
   @ApiProperty({
     example: 'https://example.com/video.mp4',
     description: 'URL to external resource',
@@ -104,13 +104,13 @@ export class Block {
   @ManyToOne(() => Module, (module) => module.blocks, { onDelete: 'CASCADE' })
   module: Module;
 
-  @CreateDateColumn({ name: 'created_at' })
+  @CreateDateColumn()
   createdAt: Date;
 
-  @UpdateDateColumn({ name: 'updated_at' })
+  @UpdateDateColumn()
   updatedAt: Date;
 
-  @DeleteDateColumn({ name: 'deleted_at' })
+  @DeleteDateColumn()
   deletedAt: Date;
 
   @OneToMany(() => BlockAnswer, (answer) => answer.block)

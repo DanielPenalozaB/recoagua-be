@@ -28,7 +28,7 @@ export class BlockAnswer {
   })
   text: string;
 
-  @Column({ name: 'is_correct' })
+  @Column()
   @ApiProperty({ example: true, description: 'Whether this answer is correct' })
   isCorrect: boolean;
 
@@ -44,9 +44,9 @@ export class BlockAnswer {
   @ApiProperty({ example: 1, description: 'Order of the answer in the list' })
   order: number;
 
-  @CreateDateColumn({ name: 'created_at' })
+  @CreateDateColumn()
   createdAt: Date;
 
-  @UpdateDateColumn({ name: 'updated_at' })
+  @UpdateDateColumn()
   updatedAt: Date;
 }

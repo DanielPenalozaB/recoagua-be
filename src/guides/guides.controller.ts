@@ -25,8 +25,11 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CreateGuideDto } from './dto/create-guide.dto';
 import { GuideResponseDto } from './dto/guide-response.dto';
 import { UpdateGuideDto } from './dto/update-guide.dto';
-import { GuideStatus } from './entities/guide.entity';
 import { GuidesService } from './guides.service';
+import { GuideFilterDto } from './dto/guide-filter.dto';
+import { PaginationDto } from 'src/common/dto/pagination.dto';
+import { CityResponseDto } from 'src/cities/dto/city-response.dto';
+import { GuideStatus } from './enums/guide-status.enum';
 
 @ApiTags('Guides')
 @Controller('guides')
@@ -50,11 +53,8 @@ export class GuidesController {
   @ApiResponse({ status: HttpStatus.OK, description: 'Guides retrieved successfully', type: [GuideResponseDto] })
   @ApiQuery({ name: 'status', enum: GuideStatus, required: false })
   @ApiQuery({ name: 'language', type: String, required: false })
-  async findAll(
-    @Query('status') status?: GuideStatus,
-    @Query('language') language?: string,
-  ) {
-    return await this.guidesService.findAll(status, language);
+  async findAll(@Query() filterDto: GuideFilterDto): Promise<PaginationDto<CityResponseDto>> {
+    return await this.guidesService.findAll(filterDto);
   }
 
   @Get(':id')

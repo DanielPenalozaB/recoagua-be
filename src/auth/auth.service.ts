@@ -160,7 +160,7 @@ export class AuthService {
       emailConfirmed: false,
     };
 
-    const newUser = await this.usersService.create(userData, true) as UserWithPasswordDto;
+    const { password, passwordResetExpires, passwordResetToken, passwordSet, emailConfirmed, status, ...newUser } = await this.usersService.create(userData, true) as UserWithPasswordDto;
 
     await this.mailService.sendEmailConfirmation(
       newUser.name,
