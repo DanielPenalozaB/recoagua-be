@@ -41,11 +41,20 @@ services:
       PASSWORD_RESET_TOKEN_EXPIRATION: ${PASSWORD_RESET_TOKEN_EXPIRATION:-3600}
       RESEND_API_KEY: ${RESEND_API_KEY}
       RESEND_EMAIL_FROM: ${RESEND_EMAIL_FROM}
-    ports:
-      - "${APP_PORT:-4000}:${APP_PORT:-4000}"
+    expose:
+      - "4000"
     networks:
       - recoagua_network
+      - coolify  # Add Coolify network
     restart: unless-stopped
+    labels:
+      - "coolify.managed=true"
+      - "traefik.enable=true"
+      - "traefik.http.routers.recoagua-app.rule=Host(`be.recoagua.com`)"
+      - "traefik.http.routers.recoagua-app.tls=true"
+      - "traefik.http.routers.recoagua-app.tls.certresolver=letsencrypt"
+      - "traefik.http.services.recoagua-app.loadbalancer.server.port=4000"
+      - "traefik.docker.network=coolify"
 
 volumes:
   postgres_data:
@@ -54,3 +63,5 @@ volumes:
 networks:
   recoagua_network:
     driver: bridge
+  coolify:
+    external: true
