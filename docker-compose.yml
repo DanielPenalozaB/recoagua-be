@@ -46,25 +46,6 @@ services:
     networks:
       - recoagua_network
     restart: unless-stopped
-    # Only add healthcheck in production
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:${APP_PORT:-4000}/health || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-    # Development-specific volume mounts
-    volumes:
-      - ${NODE_ENV:-development}:/usr/src/app
-      - /usr/src/app/node_modules
-    command: >
-      sh -c "
-        if [ '${NODE_ENV:-development}' = 'production' ]; then
-          node dist/main
-        else
-          npm run start:dev
-        fi
-      "
 
 volumes:
   postgres_data:
