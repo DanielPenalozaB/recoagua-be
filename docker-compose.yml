@@ -10,18 +10,19 @@ services:
       POSTGRES_DB: ${DB_DATABASE:-recoagua_db}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "${DB_PORT:-5432}:5432"
     networks:
       - recoagua_network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-recoagua_user} -d ${DB_DATABASE:-recoagua_db}"]
-      interval: 5s
+      interval: 10s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
 
   app:
-    build: .
+    build: 
+      context: .
+      target: ${BUILD_TARGET:-development}
     container_name: recoagua_app
     depends_on:
       postgres:
@@ -34,17 +35,40 @@ services:
       DB_DATABASE: ${DB_DATABASE:-recoagua_db}
       APP_PORT: ${APP_PORT:-4000}
       NODE_ENV: ${NODE_ENV:-development}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-24h}
+      FRONTEND_URL: ${FRONTEND_URL}
+      PASSWORD_RESET_TOKEN_EXPIRATION: ${PASSWORD_RESET_TOKEN_EXPIRATION:-3600}
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      RESEND_EMAIL_FROM: ${RESEND_EMAIL_FROM}
     ports:
       - "${APP_PORT:-4000}:${APP_PORT:-4000}"
     networks:
       - recoagua_network
+    restart: unless-stopped
+    # Only add healthcheck in production
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:${APP_PORT:-4000}/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    # Development-specific volume mounts
     volumes:
-      - .:/usr/src/app
+      - ${NODE_ENV:-development}:/usr/src/app
       - /usr/src/app/node_modules
-    command: npm run start:${NODE_ENV:-dev}
+    command: >
+      sh -c "
+        if [ '${NODE_ENV:-development}' = 'production' ]; then
+          node dist/main
+        else
+          npm run start:dev
+        fi
+      "
 
 volumes:
   postgres_data:
+    driver: local
 
 networks:
   recoagua_network:

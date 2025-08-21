@@ -1,22 +1,43 @@
-FROM node:20-slim
+# Development stage
+FROM node:20-alpine AS development
+WORKDIR /usr/src/app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+EXPOSE 4000
+CMD ["npm", "run", "start:dev"]
 
+# Build stage
+FROM node:20-alpine AS builder
+WORKDIR /usr/src/app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+# Production stage
+FROM node:20-alpine AS production
 WORKDIR /usr/src/app
 
-# Copy package files first for better caching
+# Install curl for health checks
+RUN apk add --no-cache curl
+
+# Copy package files and install production dependencies
 COPY package*.json ./
-COPY package-lock.json ./
+RUN npm ci --only=production && npm cache clean --force
 
-# Install dependencies
-RUN npm install
+# Copy built application
+COPY --from=builder /usr/src/app/dist ./dist
 
-# Copy all other files
-COPY . .
+# Create non-root user for security
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nestjs -u 1001 -G nodejs
+USER nestjs
 
-# Build the app (only needed for production)
-# RUN npm run build
-
-# Expose the app port
 EXPOSE 4000
 
-# Start the app (default command, can be overridden in compose)
-CMD ["npm", "run", "start:prod"]
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:4000/health || exit 1
+
+CMD ["node", "dist/main"]
