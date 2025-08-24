@@ -15,11 +15,11 @@ function ensureEnvVariable(variable: string): string {
 
 export const dataSourceOptions: DataSourceOptions = {
   type: 'postgres',
-  host: ensureEnvVariable('DB_HOST') || 'localhost',
-  port: parseInt(ensureEnvVariable('DB_PORT'), 5432),
-  username: ensureEnvVariable('DB_USERNAME') || 'recoagua_user',
-  password: ensureEnvVariable('DB_PASSWORD') || 'recoagua_password',
-  database: ensureEnvVariable('DB_DATABASE') || 'recoagua_db',
+  host: ensureEnvVariable('DB_HOST'),
+  port: parseInt(ensureEnvVariable('DB_PORT')),
+  username: ensureEnvVariable('DB_USERNAME'),
+  password: ensureEnvVariable('DB_PASSWORD'),
+  database: ensureEnvVariable('DB_DATABASE'),
   entities: [ `${__dirname}/../**/*.entity{.ts,.js}` ],
   migrations: [ `${__dirname}/../database/migrations/*{.ts,.js}` ]
 };
@@ -30,7 +30,7 @@ const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000;
 
 export const initializeDataSource = async (): Promise<DataSource> => {
-  if (dataSource.isInitialized) {
+  if (dataSource.isInitialized) { 
     console.log('DataSource already initialized');
     return dataSource;
   }
