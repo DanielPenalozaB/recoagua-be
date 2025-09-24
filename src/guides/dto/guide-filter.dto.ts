@@ -1,6 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString, MinLength } from 'class-validator';
+import { IsEnum, IsOptional, IsString, MinLength } from 'class-validator';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
+import { GuideStatus } from '../enums/guide-status.enum';
 
 export class GuideFilterDto extends PaginationQueryDto {
   @ApiPropertyOptional({
@@ -11,4 +12,13 @@ export class GuideFilterDto extends PaginationQueryDto {
   @IsString()
   @MinLength(1)
   search?: string;
+
+  @ApiPropertyOptional({
+    description: 'Filter by status',
+    example: GuideStatus.PUBLISHED,
+    enum: GuideStatus,
+  })
+  @IsOptional()
+  @IsEnum(GuideStatus)
+  status?: GuideStatus
 }

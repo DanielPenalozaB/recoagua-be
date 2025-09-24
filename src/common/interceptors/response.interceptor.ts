@@ -13,7 +13,13 @@ export class ResponseInterceptor<T> implements NestInterceptor<T, ApiResponse<T>
   intercept(context: ExecutionContext, next: CallHandler): Observable<ApiResponse<T>> {
     return next.handle().pipe(
       map((data) => {
-        if (data.meta) {
+        // If it's already formatted as ApiResponse, return as-is
+        if (this.isApiResponse(data)) {
+          return data;
+        }
+
+        // If it's a paginated response with meta and data
+        if (this.isPaginatedResponse(data)) {
           return {
             success: true,
             message: 'Operation successful',
@@ -22,11 +28,28 @@ export class ResponseInterceptor<T> implements NestInterceptor<T, ApiResponse<T>
           };
         }
 
+        // For all other successful responses
         return {
           success: true,
           message: 'Operation successful',
           data,
-      }}),
+        };
+      }),
     );
+  }
+
+  private isApiResponse(data: any): data is ApiResponse<any> {
+    return data &&
+      typeof data === 'object' &&
+      'success' in data &&
+      'message' in data &&
+      'data' in data;
+  }
+
+  private isPaginatedResponse(data: any): data is { data: any; meta: any } {
+    return data &&
+      typeof data === 'object' &&
+      'data' in data &&
+      'meta' in data;
   }
 }

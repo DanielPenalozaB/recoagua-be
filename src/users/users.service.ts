@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, ConflictException, BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Not, In } from 'typeorm';
+import { Repository, Not, In, MoreThan } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { User } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -14,6 +14,7 @@ import { BulkCreateUserDto } from './dto/bulk-create-user.dto';
 import { applySearch, applySort, paginate } from 'src/common/utils/pagination.util';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { JwtService } from '@nestjs/jwt';
+import { MailService } from 'src/mail/mail.service';
 
 @Injectable()
 export class UsersService {
@@ -23,6 +24,7 @@ export class UsersService {
     @InjectRepository(City)
     private readonly cityRepository: Repository<City>,
     private readonly jwtService: JwtService,
+    private readonly mailService: MailService,
   ) {}
 
   async create(createUserDto: CreateUserDto, withPassword = false): Promise<UserResponseDto | UserWithPasswordDto> {
@@ -34,6 +36,7 @@ export class UsersService {
     const newUser = this.userRepository.create({
       ...createUserDto,
       city,
+      passwordSet: withPassword,
       password: createUserDto.password,
       status: createUserDto.status || UserStatus.PENDING,
       role: createUserDto.role || UserRole.CITIZEN,
@@ -41,6 +44,12 @@ export class UsersService {
     });
 
     const savedUser = await this.userRepository.save(newUser);
+
+    await this.mailService.sendEmailConfirmation(
+      newUser.name,
+      newUser.email,
+      newUser.emailConfirmationToken as string,
+    );
 
     return this.toResponseDto(savedUser, withPassword);
   }
@@ -215,13 +224,13 @@ export class UsersService {
     await this.userRepository.update(userId, {
       emailConfirmed: true,
       emailConfirmationToken: null,
-      passwordSet: true,
-      status: UserStatus.ACTIVE
+      status: UserStatus.PENDING
     });
   }
 
   async setPasswordResetToken(userId: number, token: string, expiresAt: Date): Promise<void> {
     await this.userRepository.update(userId, {
+      passwordSet: false,
       passwordResetToken: token,
       passwordResetExpires: expiresAt,
     });
@@ -229,6 +238,7 @@ export class UsersService {
 
   async clearPasswordResetToken(userId: number): Promise<void> {
     await this.userRepository.update(userId, {
+      passwordSet: false,
       passwordResetToken: null,
       passwordResetExpires: null,
     });
@@ -239,6 +249,9 @@ export class UsersService {
     await this.userRepository.update(userId, {
       password: hashedPassword,
       passwordSet: true,
+      passwordResetToken: null,
+      passwordResetExpires: null,
+      status: UserStatus.ACTIVE
     });
   }
 
@@ -315,7 +328,7 @@ export class UsersService {
     if (withPassword) {
       const withPasswordResponse: UserWithPasswordDto = {
         ...baseResponse,
-        password: user.password,
+        password: user.password ?? '',
         passwordResetToken: user.passwordResetToken,
         passwordResetExpires: user.passwordResetExpires,
         emailConfirmationToken: user.emailConfirmationToken,
@@ -364,5 +377,25 @@ export class UsersService {
     await this.userRepository.update(userId, {
       refreshToken: null
     });
+  }
+
+  async findByPasswordSetupToken(token: string): Promise<User | null> {
+    return this.userRepository.findOne({
+      where: {
+        passwordResetToken: token,
+        passwordResetExpires: MoreThan(new Date()),
+      },
+      relations: ['city'],
+    });
+  }
+
+  async validatePasswordSetupToken(token: string): Promise<{ isValid: boolean; user?: User }> {
+    const user = await this.findByPasswordSetupToken(token);
+
+    if (!user) {
+      return { isValid: false };
+    }
+
+    return { isValid: true, user };
   }
 }

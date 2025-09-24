@@ -32,8 +32,8 @@ export class User {
   @ApiProperty({ example: 'John Doe', description: 'The full name of the user' })
   name: string;
 
-  @Column({ type: 'varchar' })
-  password: string;
+  @Column({ type: 'varchar', nullable: true })
+  password: string | null;
 
   @Column({ type: 'boolean', default: false })
   passwordSet: boolean;

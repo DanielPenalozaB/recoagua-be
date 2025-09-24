@@ -11,20 +11,94 @@ import { CityResponseDto } from 'src/cities/dto/city-response.dto';
 import { applySearch, applySort, paginate } from 'src/common/utils/pagination.util';
 import { GuideResponseDto } from './dto/guide-response.dto';
 import { GuideStatus } from './enums/guide-status.enum';
+import { Module } from 'src/modules/entities/module.entity';
+import { Block } from 'src/blocks/entities/block.entity';
+import { BlockAnswer } from 'src/blocks/entities/block-answer.entity';
+import { RelationalPair } from 'src/blocks/entities/relational-pair.entity';
 
 @Injectable()
 export class GuidesService {
   constructor(
     @InjectRepository(Guide)
     private readonly guideRepository: Repository<Guide>,
+    @InjectRepository(Module)
+    private readonly moduleRepository: Repository<Module>,
+    @InjectRepository(Block)
+    private readonly blockRepository: Repository<Block>,
+    @InjectRepository(BlockAnswer)
+    private readonly answerRepository: Repository<BlockAnswer>,
+    @InjectRepository(RelationalPair)
+    private readonly relationalPairRepository: Repository<RelationalPair>,
     @InjectRepository(UserProgress)
     private readonly userProgressRepository: Repository<UserProgress>,
   ) {}
 
-  async create(createGuideDto: CreateGuideDto): Promise<Guide> {
-    const guide = this.guideRepository.create(createGuideDto);
-    return await this.guideRepository.save(guide);
+  async create(createGuideDto: CreateGuideDto): Promise<Guide | null> {
+    const { modules, ...guideData } = createGuideDto;
+
+    const guide = this.guideRepository.create(guideData);
+    const savedGuide = await this.guideRepository.save(guide);
+
+    console.log('[GuidesService Create]:: Saved guide:', savedGuide);
+
+    if (modules && modules.length > 0) {
+      for (const moduleData of modules) {
+        console.log('[GuidesService Create]:: moduleData:', moduleData);
+
+        const { blocks, ...moduleInfo } = moduleData;
+
+        // Create module
+        const module = this.moduleRepository.create({
+          ...moduleInfo,
+          guide: savedGuide,
+        });
+        const savedModule = await this.moduleRepository.save(module);
+
+        // Create blocks and their nested entities if they exist
+        if (blocks && blocks.length > 0) {
+          for (const blockData of blocks) {
+            const { answers, relationalPairs, ...blockInfo } = blockData;
+
+            // Create block
+            const block = this.blockRepository.create({
+              ...blockInfo,
+              module: savedModule,
+            });
+            const savedBlock = await this.blockRepository.save(block);
+
+            // Create answers if they exist
+            if (answers && answers.length > 0) {
+              const answerEntities = answers.map(answerData =>
+                this.answerRepository.create({
+                  ...answerData,
+                  block: savedBlock,
+                })
+              );
+              await this.answerRepository.save(answerEntities);
+            }
+
+            // Create relational pairs if they exist
+            if (relationalPairs && relationalPairs.length > 0) {
+              const pairEntities = relationalPairs.map(pairData =>
+                this.relationalPairRepository.create({
+                  ...pairData,
+                  block: savedBlock,
+                })
+              );
+              await this.relationalPairRepository.save(pairEntities);
+            }
+          }
+        }
+      }
+    }
+
+    // Return the complete guide with all relations
+    return this.guideRepository.findOne({
+      where: { id: savedGuide.id },
+      relations: ['modules', 'modules.blocks', 'modules.blocks.answers', 'modules.blocks.relationalPairs'],
+    });
   }
+
 
   async findAll(
     filterDto: GuideFilterDto
@@ -35,6 +109,7 @@ export class GuidesService {
       search = '',
       sortBy = 'guide.updatedAt',
       sortDirection = 'DESC',
+      status
     } = filterDto;
 
     const queryBuilder = this.guideRepository
@@ -47,6 +122,11 @@ export class GuidesService {
 
     // Apply sorting - now safely passing strings
     applySort(queryBuilder, sortBy, sortDirection);
+
+    // Apply status filter if provided
+    if (status) {
+      queryBuilder.andWhere('guide.status = :status', { status });
+    }
 
     // Execute pagination
     const result = await paginate<Guide>(queryBuilder, page, limit);

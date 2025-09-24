@@ -6,6 +6,8 @@ dotenv.config();
 function ensureEnvVariable(variable: string): string {
   const value = process.env[variable];
 
+  console.log(`Environment variable ${variable}:`, value);
+
   if (!value) {
     throw new Error(`Environment variable ${variable} is not defined`);
   }

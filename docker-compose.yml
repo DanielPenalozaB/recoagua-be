@@ -8,10 +8,10 @@ services:
       POSTGRES_USER: ${DB_USERNAME:-recoagua_user}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-recoagua_password}
       POSTGRES_DB: ${DB_DATABASE:-recoagua_db}
+    ports:
+      - "${DB_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    networks:
-      - recoagua_network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-recoagua_user} -d ${DB_DATABASE:-recoagua_db}"]
       interval: 10s
@@ -19,49 +19,6 @@ services:
       retries: 5
     restart: unless-stopped
 
-  app:
-    build: 
-      context: .
-      target: ${BUILD_TARGET:-development}
-    container_name: recoagua_app
-    depends_on:
-      postgres:
-        condition: service_healthy
-    environment:
-      DB_HOST: postgres
-      DB_PORT: ${DB_PORT:-5432}
-      DB_USERNAME: ${DB_USERNAME:-recoagua_user}
-      DB_PASSWORD: ${DB_PASSWORD:-recoagua_password}
-      DB_DATABASE: ${DB_DATABASE:-recoagua_db}
-      APP_PORT: ${APP_PORT:-4000}
-      NODE_ENV: ${NODE_ENV:-development}
-      JWT_SECRET: ${JWT_SECRET}
-      JWT_EXPIRATION: ${JWT_EXPIRATION:-24h}
-      FRONTEND_URL: ${FRONTEND_URL}
-      PASSWORD_RESET_TOKEN_EXPIRATION: ${PASSWORD_RESET_TOKEN_EXPIRATION:-3600}
-      RESEND_API_KEY: ${RESEND_API_KEY}
-      RESEND_EMAIL_FROM: ${RESEND_EMAIL_FROM}
-    expose:
-      - "4000"
-    networks:
-      - recoagua_network
-      - coolify  # Add Coolify network
-    restart: unless-stopped
-    labels:
-      - "coolify.managed=true"
-      - "traefik.enable=true"
-      - "traefik.http.routers.recoagua-app.rule=Host(`be.recoagua.com`)"
-      - "traefik.http.routers.recoagua-app.tls=true"
-      - "traefik.http.routers.recoagua-app.tls.certresolver=letsencrypt"
-      - "traefik.http.services.recoagua-app.loadbalancer.server.port=4000"
-      - "traefik.docker.network=coolify"
-
 volumes:
   postgres_data:
     driver: local
-
-networks:
-  recoagua_network:
-    driver: bridge
-  coolify:
-    external: true

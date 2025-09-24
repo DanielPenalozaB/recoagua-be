@@ -97,4 +97,14 @@ export class AuthController {
   async logout(@Request() req) {
     return this.authService.logout(req.user.sub);
   }
+
+  @Post('validate-password-token')
+  async validatePasswordToken(@Body() body: { token: string }) {
+    return this.authService.validatePasswordToken(body.token);
+  }
+
+  @Post('setup-password')
+  async setupPassword(@Body() setPasswordDto: { token: string; newPassword: string }) {
+    return this.authService.setupPassword(setPasswordDto);
+  }
 }

@@ -1,7 +1,9 @@
-import { IsString, IsEnum, IsNumber, IsOptional, MinLength, Min } from 'class-validator';
+import { IsString, IsEnum, IsNumber, IsOptional, MinLength, Min, IsArray, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 import { GuideDifficulty } from '../enums/guide-difficulty.enum';
 import { GuideStatus } from '../enums/guide-status.enum';
+import { CreateModuleDto } from './create-module.dto';
 
 export class CreateGuideDto {
   @ApiProperty({ example: 'Water Conservation Basics' })
@@ -37,4 +39,11 @@ export class CreateGuideDto {
   @IsNumber()
   @Min(0)
   totalPoints: number;
+
+  @ApiProperty({ type: [CreateModuleDto], description: 'Modules contained in this guide', required: false })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateModuleDto)
+  @IsOptional()
+  modules?: CreateModuleDto[];
 }

@@ -40,7 +40,7 @@ export class UsersController {
   @ApiResponse({ status: 400, description: 'Bad request' })
   @ApiResponse({ status: 409, description: 'Email already in use' })
   async create(@Body() createUserDto: CreateUserDto): Promise<UserResponseDto> {
-    return this.usersService.create(createUserDto);
+    return this.usersService.create(createUserDto, false);
   }
 
   @Post('bulk')

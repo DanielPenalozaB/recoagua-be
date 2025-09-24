@@ -184,7 +184,26 @@ export class AuthService {
       throw new BadRequestException('Email already confirmed');
     }
 
-    return this.usersService.confirmUserEmail(user.id);
+    // Confirm email first
+    await this.usersService.confirmUserEmail(user.id);
+
+    // Generate password setup token
+    const passwordSetupToken = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 24 * 3600000); // 24 hours
+
+    await this.usersService.setPasswordResetToken(user.id, passwordSetupToken, expiresAt);
+
+    // Send password setup email
+    await this.mailService.sendPasswordSetupEmail(
+      user.name,
+      user.email,
+      passwordSetupToken,
+    );
+
+    return {
+      success: true,
+      message: 'Email confirmed successfully. Password setup instructions sent.'
+    };
   }
 
   async changePassword(userId: number, changePasswordDto: ChangePasswordDto) {
@@ -309,5 +328,39 @@ export class AuthService {
     if (!storedHashedToken) return false;
 
     return await bcrypt.compare(providedToken, storedHashedToken);
+  }
+
+  async setupPassword(setPasswordDto: {
+    token: string;
+    newPassword: string;
+  }): Promise<{ message: string }> {
+    const user = await this.usersService.findByPasswordSetupToken(setPasswordDto.token);
+
+    if (!user) {
+      throw new BadRequestException('Invalid or expired password setup token');
+    }
+
+    if (new Date(user.passwordResetExpires || new Date()) < new Date()) {
+      throw new BadRequestException('Password setup token has expired');
+    }
+
+    // Hash and set the new password
+    const hashedPassword = await this.hashPassword(setPasswordDto.newPassword);
+    await this.usersService.updatePassword(user.id, hashedPassword);
+
+    // Clear the password setup token
+    await this.usersService.clearPasswordResetToken(user.id);
+
+    return { message: 'Password set successfully' };
+  }
+
+  async validatePasswordToken(token: string): Promise<{ isValid: boolean; message?: string }> {
+    const user = await this.usersService.findByPasswordSetupToken(token);
+
+    if (!user) {
+      return { isValid: false, message: 'Invalid or expired token' };
+    }
+
+    return { isValid: true };
   }
 }
