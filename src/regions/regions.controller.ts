@@ -1,17 +1,20 @@
 import {
-  Controller,
-  Get,
-  Post,
   Body,
-  Patch,
-  Param,
+  Controller,
   Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
 } from '@nestjs/common';
-import { RegionsService } from './regions.service';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { CreateRegionDto } from './dto/create-region.dto';
-import { UpdateRegionDto } from './dto/update-region.dto';
+import { RegionFilterDto } from './dto/region-filter.dto';
 import { RegionResponseDto } from './dto/region-response.dto';
-import { ApiBearerAuth, ApiTags, ApiResponse } from '@nestjs/swagger';
+import { UpdateRegionDto } from './dto/update-region.dto';
+import { RegionsService } from './regions.service';
 
 @ApiTags('Regions')
 @Controller('regions')
@@ -26,9 +29,14 @@ export class RegionsController {
   }
 
   @Get()
-  @ApiResponse({ status: 200, type: [RegionResponseDto] })
-  async findAll(): Promise<RegionResponseDto[]> {
-    return this.regionsService.findAll();
+  @ApiOperation({ summary: 'List and filter regions with pagination' })
+  @ApiResponse({
+    status: 200,
+    description: 'Paginated list of regions',
+    type: PaginationDto<RegionResponseDto>
+  })
+  async findAll(@Query() filterDto: RegionFilterDto): Promise<PaginationDto<RegionResponseDto>> {
+    return this.regionsService.findAll(filterDto);
   }
 
   @Get(':id')

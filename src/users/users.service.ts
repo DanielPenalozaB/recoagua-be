@@ -315,7 +315,6 @@ export class UsersService {
         description: user.city.description,
         rainfall: user.city.rainfall,
         language: user.city.language,
-        regionId: user.city.region ? user.city.region.id : null,
         createdAt: user.city.createdAt,
         updatedAt: user.city.updatedAt,
       } : null,

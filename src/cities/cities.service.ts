@@ -20,23 +20,30 @@ export class CitiesService {
   ) {}
 
   async create(createCityDto: CreateCityDto): Promise<CityResponseDto> {
-    if (!createCityDto.regionId) {
-      throw new NotFoundException('Region ID is required');
+    if (createCityDto.regionId) {
+      const region = await this.regionRepository.findOne({
+        where: { id: createCityDto.regionId }
+      });
+
+      if (!region) {
+        throw new NotFoundException('Region not found');
+      }
+
+      const city = this.cityRepository.create({
+        ...createCityDto,
+        region,
+      });
+
+      const savedCity = await this.cityRepository.save(city);
+      return this.toResponseDto(savedCity);
+    } else {
+      const city = this.cityRepository.create({
+        ...createCityDto,
+      });
+
+      const savedCity = await this.cityRepository.save(city);
+      return this.toResponseDto(savedCity);
     }
-
-    const region = await this.regionRepository.findOne({ where: { id: createCityDto.regionId } });
-
-    if (!region) {
-      throw new NotFoundException('Region not found');
-    }
-
-    const city = this.cityRepository.create({
-      ...createCityDto,
-      region,
-    });
-
-    const savedCity = await this.cityRepository.save(city);
-    return this.toResponseDto(savedCity);
   }
 
   async findAll(
@@ -133,7 +140,7 @@ export class CitiesService {
       description: city.description,
       rainfall: city.rainfall,
       language: city.language,
-      regionId: city.region?.id,
+      region: city.region ? city.region : null,
       createdAt: city.createdAt,
       updatedAt: city.updatedAt,
     };

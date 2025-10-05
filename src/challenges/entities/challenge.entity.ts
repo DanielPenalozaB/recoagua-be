@@ -1,17 +1,17 @@
+import { ApiProperty } from '@nestjs/swagger';
+import { UserChallenge } from 'src/user-challenges/entities/user-challenge.entity';
 import {
-  Entity,
-  PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
-  UpdateDateColumn,
   DeleteDateColumn,
+  Entity,
   OneToMany,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from 'typeorm';
-import { ApiProperty } from '@nestjs/swagger';
 import { ChallengeDifficulty } from '../enums/challenge-difficult.enum';
 import { ChallengeStatus } from '../enums/challenge-status.enum';
 import { ChallengeType } from '../enums/challenge-type.enum';
-import { UserChallenge } from 'src/user-challenges/entities/user-challenge.entity';
 
 @Entity('challenges')
 export class Challenge {
@@ -72,7 +72,8 @@ export class Challenge {
   updatedAt: Date;
 
   @DeleteDateColumn()
-  deletedAt: Date;
+  @Column({ type: 'timestamp', nullable: true })
+  deletedAt: Date | null;
 
   @OneToMany(() => UserChallenge, (userChallenge) => userChallenge.challenge)
   userChallenges: UserChallenge[];

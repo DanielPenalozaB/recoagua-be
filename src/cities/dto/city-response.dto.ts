@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { RegionResponseDto } from 'src/regions/dto/region-response.dto';
 
 export class CityResponseDto {
   @ApiProperty({ example: 1, description: 'City ID' })
@@ -16,8 +17,8 @@ export class CityResponseDto {
   @ApiProperty({ example: 'es', description: 'Language code' })
   language: string;
 
-  @ApiProperty({ example: 1, description: 'Region ID', required: false })
-  regionId?: number | null;
+  @ApiProperty()
+  region?: RegionResponseDto | null;
 
   @ApiProperty({ description: 'Creation date' })
   createdAt: Date;

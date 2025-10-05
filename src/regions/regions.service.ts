@@ -1,10 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { PaginationDto } from 'src/common/dto/pagination.dto';
+import { applySearch, applySort, paginate } from 'src/common/utils/pagination.util';
 import { Repository } from 'typeorm';
-import { Region } from './entities/region.entity';
 import { CreateRegionDto } from './dto/create-region.dto';
-import { UpdateRegionDto } from './dto/update-region.dto';
+import { RegionFilterDto } from './dto/region-filter.dto';
 import { RegionResponseDto } from './dto/region-response.dto';
+import { UpdateRegionDto } from './dto/update-region.dto';
+import { Region } from './entities/region.entity';
 
 @Injectable()
 export class RegionsService {
@@ -19,9 +22,38 @@ export class RegionsService {
     return this.toResponseDto(savedRegion);
   }
 
-  async findAll(): Promise<RegionResponseDto[]> {
-    const regions = await this.regionRepository.find();
-    return regions.map(region => this.toResponseDto(region));
+  async findAll(
+    filterDto: RegionFilterDto
+  ): Promise<PaginationDto<RegionResponseDto>> {
+    const {
+      page = 1,
+      limit = 10,
+      search = '',
+      sortBy = 'region.updatedAt',
+      sortDirection = 'DESC'
+    } = filterDto;
+
+    const queryBuilder = this.regionRepository
+      .createQueryBuilder('region');
+
+    // Apply search - now safely passing string (empty string if undefined)
+    applySearch(queryBuilder, search, [
+      'region.name'
+    ]);
+
+    // Apply sorting - now safely passing strings
+    applySort(queryBuilder, sortBy, sortDirection);
+
+    // Execute pagination
+    const result = await paginate<Region>(queryBuilder, page, limit);
+
+    // Convert to DTO
+    const data = result.data.map((region) => this.toResponseDto(region));
+
+    return {
+      data,
+      meta: result.meta
+    };
   }
 
   async findOne(id: number): Promise<RegionResponseDto> {
