@@ -359,9 +359,7 @@ export class UsersService {
   }
 
   async updateRefreshToken(userId: number, refreshToken: string): Promise<void> {
-    await this.userRepository.update(userId, {
-      refreshToken: await bcrypt.hash(refreshToken, 10)
-    });
+    await this.userRepository.update(userId, { refreshToken });
   }
 
   async getRefreshToken(userId: number): Promise<string | null> {

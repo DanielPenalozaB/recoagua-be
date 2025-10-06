@@ -80,22 +80,32 @@ export class AuthService {
 
   async refreshToken(refreshTokenDto: RefreshTokenDto): Promise<LoginResponseDto> {
     try {
-      // Verify the refresh token
-      const payload = this.jwtService.verify(refreshTokenDto.refreshToken);
+      console.log('Refresh token request received:', {
+        tokenLength: refreshTokenDto.refreshToken?.length,
+        tokenPrefix: refreshTokenDto.refreshToken?.substring(0, 20) + '...'
+      });
 
-      // Find user and verify refresh token is still valid
+      const payload = this.jwtService.verify(refreshTokenDto.refreshToken);
+      console.log('Token payload:', payload);
+
       const user = await this.usersService.findOne(payload.sub);
       if (!user) {
+        console.log('User not found for ID:', payload.sub);
         throw new UnauthorizedException('Invalid refresh token');
       }
 
-      // Check if refresh token matches the one stored in database
       const storedRefreshToken = await this.usersService.getRefreshToken(user.id);
+      console.log('Stored token comparison:', {
+        storedLength: storedRefreshToken?.length,
+        providedLength: refreshTokenDto.refreshToken?.length,
+        tokensMatch: storedRefreshToken === refreshTokenDto.refreshToken
+      });
+
       if (storedRefreshToken !== refreshTokenDto.refreshToken) {
+        console.log('Refresh tokens do not match');
         throw new UnauthorizedException('Invalid refresh token');
       }
 
-      // Generate new tokens
       const newPayload: TokenPayload = {
         sub: user.id,
         email: user.email,
@@ -110,8 +120,9 @@ export class AuthService {
 
       const newRefreshToken = this.generateRefreshToken(user.id);
 
-      // Update refresh token in database
       await this.usersService.updateRefreshToken(user.id, newRefreshToken);
+
+      console.log('Refresh token successful for user:', user.email);
 
       return {
         user,
@@ -119,7 +130,8 @@ export class AuthService {
         refreshToken: newRefreshToken,
         expiresIn: this.ACCESS_TOKEN_EXPIRY_SECONDS,
       };
-    } catch {
+    } catch (error) {
+      console.error('Refresh token error:', error);
       throw new UnauthorizedException('Invalid refresh token');
     }
   }
