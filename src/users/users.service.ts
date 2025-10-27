@@ -365,7 +365,7 @@ export class UsersService {
   async getRefreshToken(userId: number): Promise<string | null> {
     const user = await this.userRepository.findOne({
       where: { id: userId },
-      select: ['refreshToken']
+      select: ['id', 'refreshToken']
     });
     return user?.refreshToken || null;
   }

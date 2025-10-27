@@ -39,12 +39,8 @@ export class GuidesService {
     const guide = this.guideRepository.create(guideData);
     const savedGuide = await this.guideRepository.save(guide);
 
-    console.log('[GuidesService Create]:: Saved guide:', savedGuide);
-
     if (modules && modules.length > 0) {
       for (const moduleData of modules) {
-        console.log('[GuidesService Create]:: moduleData:', moduleData);
-
         const { blocks, ...moduleInfo } = moduleData;
 
         // Create module
@@ -149,8 +145,11 @@ export class GuidesService {
       queryBuilder
         .leftJoinAndSelect('guide.modules', 'modules')
         .leftJoinAndSelect('modules.blocks', 'blocks')
+        .leftJoinAndSelect('blocks.answers', 'answers')
+        .leftJoinAndSelect('blocks.relationalPairs', 'relationalPairs')
         .orderBy('modules.order', 'ASC')
-        .addOrderBy('blocks.order', 'ASC');
+        .addOrderBy('blocks.order', 'ASC')
+        .addOrderBy('answers.order', 'ASC');
     }
 
     const guide = await queryBuilder.getOne();
@@ -162,10 +161,131 @@ export class GuidesService {
     return guide;
   }
 
-  async update(id: number, updateGuideDto: UpdateGuideDto): Promise<Guide> {
-    const guide = await this.findOne(id, false);
-    Object.assign(guide, updateGuideDto);
-    return await this.guideRepository.save(guide);
+  async update(id: number, updateGuideDto: UpdateGuideDto): Promise<Guide | null> {
+    return await this.guideRepository.manager.transaction(async (transactionalEntityManager) => {
+      // First, get the guide with ALL relations properly loaded
+      const guide = await transactionalEntityManager
+        .createQueryBuilder(Guide, 'guide')
+        .leftJoinAndSelect('guide.modules', 'modules')
+        .leftJoinAndSelect('modules.blocks', 'blocks')
+        .leftJoinAndSelect('blocks.answers', 'answers')
+        .leftJoinAndSelect('blocks.relationalPairs', 'relationalPairs')
+        .where('guide.id = :id', { id })
+        .getOne();
+
+      if (!guide) {
+        throw new NotFoundException(`Guide with ID ${id} not found`);
+      }
+
+      // Update guide properties (excluding modules)
+      const { modules, ...guideData } = updateGuideDto;
+      transactionalEntityManager.merge(Guide, guide, guideData);
+      await transactionalEntityManager.save(guide);
+
+      // Handle modules if provided
+      if (modules) {
+        // Remove existing modules and their nested entities using direct queries
+        // This avoids the relation alias issues
+        if (guide.modules && guide.modules.length > 0) {
+          // Get all module IDs
+          const moduleIds = guide.modules.map(module => module.id).filter(id => id !== undefined);
+
+          if (moduleIds.length > 0) {
+            // Get all block IDs from these modules
+            const blockIds = guide.modules.flatMap(module => 
+              module.blocks?.map(block => block.id).filter(id => id !== undefined) || []
+            );
+
+            // Delete in correct order to respect foreign key constraints
+            if (blockIds.length > 0) {
+              // Delete answers
+              await transactionalEntityManager
+                .createQueryBuilder()
+                .delete()
+                .from(BlockAnswer)
+                .where('blockId IN (:...blockIds)', { blockIds })
+                .execute();
+
+              // Delete relational pairs
+              await transactionalEntityManager
+                .createQueryBuilder()
+                .delete()
+                .from(RelationalPair)
+                .where('blockId IN (:...blockIds)', { blockIds })
+                .execute();
+
+              // Delete blocks
+              await transactionalEntityManager
+                .createQueryBuilder()
+                .delete()
+                .from(Block)
+                .where('id IN (:...blockIds)', { blockIds })
+                .execute();
+            }
+
+            // Delete modules
+            await transactionalEntityManager
+              .createQueryBuilder()
+              .delete()
+              .from(Module)
+              .where('id IN (:...moduleIds)', { moduleIds })
+              .execute();
+          }
+        }
+
+        // Create new modules
+        for (const moduleData of modules) {
+          const module = transactionalEntityManager.create(Module, {
+            ...moduleData,
+            guide: { id },
+          });
+          const savedModule = await transactionalEntityManager.save(module);
+
+          // Create blocks
+          if (moduleData.blocks) {
+            for (const blockData of moduleData.blocks) {
+              const block = transactionalEntityManager.create(Block, {
+                ...blockData,
+                module: savedModule,
+              });
+              const savedBlock = await transactionalEntityManager.save(block);
+
+              // Create answers
+              if (blockData.answers && blockData.answers.length > 0) {
+                const answers = blockData.answers.map(answerData =>
+                  transactionalEntityManager.create(BlockAnswer, {
+                    ...answerData,
+                    block: savedBlock,
+                  })
+                );
+                await transactionalEntityManager.save(answers);
+              }
+
+              // Create relational pairs
+              if (blockData.relationalPairs && blockData.relationalPairs.length > 0) {
+                const pairs = blockData.relationalPairs.map(pairData =>
+                  transactionalEntityManager.create(RelationalPair, {
+                    ...pairData,
+                    block: savedBlock,
+                  })
+                );
+                await transactionalEntityManager.save(pairs);
+              }
+            }
+          }
+        }
+      }
+
+      // Return the updated guide with all relations
+      return transactionalEntityManager
+        .createQueryBuilder(Guide, 'guide')
+        .leftJoinAndSelect('guide.modules', 'modules')
+        .leftJoinAndSelect('modules.blocks', 'blocks')
+        .leftJoinAndSelect('blocks.answers', 'answers')
+        .leftJoinAndSelect('blocks.relationalPairs', 'relationalPairs')
+        .where('guide.id = :id', { id })
+        .getOne();
+    });
   }
 
   async remove(id: number): Promise<void> {

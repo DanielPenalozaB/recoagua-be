@@ -16,7 +16,7 @@ import { UserBlockResponseModule } from './user-block-response/user-block-respon
 import { UserAnswerDetailsModule } from './user-answer-details/user-answer-details.module';
 import { UserActionsModule } from './user-actions/user-actions.module';
 import { AuthModule } from './auth/auth.module';
-import { ZoneModule } from './zone/zone.module';
+import { ZonesModule } from './zone/zone.module';
 import { MailModule } from './mail/mail.module';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -44,7 +44,7 @@ import { dataSourceOptions } from './configs/typeorm.config';
     UserAnswerDetailsModule,
     UserActionsModule,
     AuthModule,
-    ZoneModule,
+    ZonesModule,
     MailModule
   ],
   controllers: [AppController],

@@ -32,7 +32,6 @@ export class Zone {
   @ApiProperty({ example: 1200, description: 'Average rainfall in mm', required: false })
   rainfall: number;
 
-  // Split into separate latitude/longitude columns
   @Column({ type: 'decimal', precision: 10, scale: 7, name: 'latitude' })
   @ApiProperty({ example: 4.6097, description: 'Latitude coordinate' })
   latitude: number;

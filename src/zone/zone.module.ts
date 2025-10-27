@@ -1,9 +1,18 @@
 import { Module } from '@nestjs/common';
-import { ZoneService } from './zone.service';
-import { ZoneController } from './zone.controller';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { ZonesService } from './zone.service';
+import { ZonesController } from './zone.controller';
+import { Zone } from './entities/zone.entity';
+import { City } from '../cities/entities/city.entity';
+import { AuthModule } from 'src/auth/auth.module';
 
 @Module({
-  controllers: [ZoneController],
-  providers: [ZoneService],
+  imports: [
+    TypeOrmModule.forFeature([Zone, City]),
+    AuthModule
+  ],
+  controllers: [ZonesController],
+  providers: [ZonesService],
+  exports: [ZonesService],
 })
-export class ZoneModule {}
+export class ZonesModule {}

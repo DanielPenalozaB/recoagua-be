@@ -80,29 +80,16 @@ export class AuthService {
 
   async refreshToken(refreshTokenDto: RefreshTokenDto): Promise<LoginResponseDto> {
     try {
-      console.log('Refresh token request received:', {
-        tokenLength: refreshTokenDto.refreshToken?.length,
-        tokenPrefix: refreshTokenDto.refreshToken?.substring(0, 20) + '...'
-      });
-
       const payload = this.jwtService.verify(refreshTokenDto.refreshToken);
-      console.log('Token payload:', payload);
 
       const user = await this.usersService.findOne(payload.sub);
       if (!user) {
-        console.log('User not found for ID:', payload.sub);
         throw new UnauthorizedException('Invalid refresh token');
       }
 
       const storedRefreshToken = await this.usersService.getRefreshToken(user.id);
-      console.log('Stored token comparison:', {
-        storedLength: storedRefreshToken?.length,
-        providedLength: refreshTokenDto.refreshToken?.length,
-        tokensMatch: storedRefreshToken === refreshTokenDto.refreshToken
-      });
 
       if (storedRefreshToken !== refreshTokenDto.refreshToken) {
-        console.log('Refresh tokens do not match');
         throw new UnauthorizedException('Invalid refresh token');
       }
 
@@ -121,8 +108,6 @@ export class AuthService {
       const newRefreshToken = this.generateRefreshToken(user.id);
 
       await this.usersService.updateRefreshToken(user.id, newRefreshToken);
-
-      console.log('Refresh token successful for user:', user.email);
 
       return {
         user,
@@ -164,6 +149,7 @@ export class AuthService {
       name: registerDto.name,
       email: registerDto.email,
       password: hashedPassword,
+      passwordSet: true,
       cityId: registerDto.cityId,
       language: registerDto.language,
       role: UserRole.CITIZEN,
@@ -172,7 +158,15 @@ export class AuthService {
       emailConfirmed: false,
     };
 
-    const { password, passwordResetExpires, passwordResetToken, passwordSet, emailConfirmed, status, ...newUser } = await this.usersService.create(userData, true) as UserWithPasswordDto;
+    const {
+      password,
+      passwordResetExpires,
+      passwordResetToken,
+      passwordSet,
+      emailConfirmed,
+      status,
+      ...newUser
+    } = await this.usersService.create(userData, true) as UserWithPasswordDto;
 
     await this.mailService.sendEmailConfirmation(
       newUser.name,
@@ -199,18 +193,20 @@ export class AuthService {
     // Confirm email first
     await this.usersService.confirmUserEmail(user.id);
 
-    // Generate password setup token
-    const passwordSetupToken = crypto.randomBytes(32).toString('hex');
-    const expiresAt = new Date(Date.now() + 24 * 3600000); // 24 hours
+    if (!user.passwordSet) {
+      // Generate password setup token
+      const passwordSetupToken = crypto.randomBytes(32).toString('hex');
+      const expiresAt = new Date(Date.now() + 24 * 3600000); // 24 hours
 
-    await this.usersService.setPasswordResetToken(user.id, passwordSetupToken, expiresAt);
+      await this.usersService.setPasswordResetToken(user.id, passwordSetupToken, expiresAt);
 
-    // Send password setup email
-    await this.mailService.sendPasswordSetupEmail(
-      user.name,
-      user.email,
-      passwordSetupToken,
-    );
+      // Send password setup email
+      await this.mailService.sendPasswordSetupEmail(
+        user.name,
+        user.email,
+        passwordSetupToken,
+      );
+    }
 
     return {
       success: true,

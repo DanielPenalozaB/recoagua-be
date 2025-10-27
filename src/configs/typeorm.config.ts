@@ -30,7 +30,7 @@ const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000;
 
 export const initializeDataSource = async (): Promise<DataSource> => {
-  if (dataSource.isInitialized) { 
+  if (dataSource.isInitialized) {
     console.log('DataSource already initialized');
     return dataSource;
   }
