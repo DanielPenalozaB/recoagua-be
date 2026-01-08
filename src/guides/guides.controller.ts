@@ -9,6 +9,7 @@ import {
   Patch,
   Post,
   Query,
+  Req,
   UseGuards
 } from '@nestjs/common';
 import {
@@ -53,8 +54,14 @@ export class GuidesController {
   @ApiResponse({ status: HttpStatus.OK, description: 'Guides retrieved successfully', type: [GuideResponseDto] })
   @ApiQuery({ name: 'status', enum: GuideStatus, required: false })
   @ApiQuery({ name: 'language', type: String, required: false })
-  async findAll(@Query() filterDto: GuideFilterDto): Promise<PaginationDto<CityResponseDto>> {
-    return await this.guidesService.findAll(filterDto);
+  async findAll(@Req() req, @Query() filterDto: GuideFilterDto): Promise<PaginationDto<CityResponseDto>> {
+    const userId = req.user?.id || req.user?.sub;
+  
+    if (typeof filterDto.hideCompleted === 'string') {
+      filterDto.hideCompleted = filterDto.hideCompleted === 'true';
+    }
+
+    return await this.guidesService.findAll(filterDto, userId);
   }
 
   @Get(':id')

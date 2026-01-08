@@ -1,10 +1,14 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Module } from './entities/module.entity';
-import { Guide } from '../guides/entities/guide.entity';
-import { CreateModuleDto } from './dto/create-module.dto';
-import { UpdateModuleDto } from './dto/update-module.dto';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { Module } from "./entities/module.entity";
+import { Guide } from "../guides/entities/guide.entity";
+import { CreateModuleDto2 } from "./dto/create-module.dto";
+import { UpdateModuleDto } from "./dto/update-module.dto";
 
 @Injectable()
 export class ModulesService {
@@ -12,32 +16,36 @@ export class ModulesService {
     @InjectRepository(Module)
     private readonly moduleRepository: Repository<Module>,
     @InjectRepository(Guide)
-    private readonly guideRepository: Repository<Guide>,
+    private readonly guideRepository: Repository<Guide>
   ) {}
 
-  async create(createModuleDto: CreateModuleDto): Promise<Module> {
+  async create(CreateModuleDto2: CreateModuleDto2): Promise<Module> {
     const guide = await this.guideRepository.findOne({
-      where: { id: createModuleDto.guideId }
+      where: { id: CreateModuleDto2.guideId },
     });
 
     if (!guide) {
-      throw new NotFoundException(`Guide with ID ${createModuleDto.guideId} not found`);
+      throw new NotFoundException(
+        `Guide with ID ${CreateModuleDto2.guideId} not found`
+      );
     }
 
     // Check for duplicate order within the same guide
     const existingModule = await this.moduleRepository.findOne({
       where: {
-        guide: { id: createModuleDto.guideId },
-        order: createModuleDto.order
-      }
+        guide: { id: CreateModuleDto2.guideId },
+        order: CreateModuleDto2.order,
+      },
     });
 
     if (existingModule) {
-      throw new BadRequestException(`Module with order ${createModuleDto.order} already exists in this guide`);
+      throw new BadRequestException(
+        `Module with order ${CreateModuleDto2.order} already exists in this guide`
+      );
     }
 
     const module = this.moduleRepository.create({
-      ...createModuleDto,
+      ...CreateModuleDto2,
       guide,
     });
 
@@ -46,14 +54,14 @@ export class ModulesService {
 
   async findAll(guideId?: number): Promise<Module[]> {
     const queryBuilder = this.moduleRepository
-      .createQueryBuilder('module')
-      .leftJoinAndSelect('module.guide', 'guide')
-      .leftJoinAndSelect('module.blocks', 'blocks')
-      .orderBy('module.order', 'ASC')
-      .addOrderBy('blocks.order', 'ASC');
+      .createQueryBuilder("module")
+      .leftJoinAndSelect("module.guide", "guide")
+      .leftJoinAndSelect("module.blocks", "blocks")
+      .orderBy("module.order", "ASC")
+      .addOrderBy("blocks.order", "ASC");
 
     if (guideId) {
-      queryBuilder.where('guide.id = :guideId', { guideId });
+      queryBuilder.where("guide.id = :guideId", { guideId });
     }
 
     return await queryBuilder.getMany();
@@ -61,14 +69,14 @@ export class ModulesService {
 
   async findOne(id: number): Promise<Module> {
     const module = await this.moduleRepository
-      .createQueryBuilder('module')
-      .leftJoinAndSelect('module.guide', 'guide')
-      .leftJoinAndSelect('module.blocks', 'blocks')
-      .leftJoinAndSelect('blocks.answers', 'answers')
-      .leftJoinAndSelect('blocks.relationalPairs', 'pairs')
-      .where('module.id = :id', { id })
-      .orderBy('blocks.order', 'ASC')
-      .addOrderBy('answers.order', 'ASC')
+      .createQueryBuilder("module")
+      .leftJoinAndSelect("module.guide", "guide")
+      .leftJoinAndSelect("module.blocks", "blocks")
+      .leftJoinAndSelect("blocks.answers", "answers")
+      .leftJoinAndSelect("blocks.relationalPairs", "pairs")
+      .where("module.id = :id", { id })
+      .orderBy("blocks.order", "ASC")
+      .addOrderBy("answers.order", "ASC")
       .getOne();
 
     if (!module) {
@@ -87,11 +95,13 @@ export class ModulesService {
         where: {
           guide: { id: module.guide.id },
           order: updateModuleDto.order,
-        }
+        },
       });
 
       if (existingModule && existingModule.id !== id) {
-        throw new BadRequestException(`Module with order ${updateModuleDto.order} already exists in this guide`);
+        throw new BadRequestException(
+          `Module with order ${updateModuleDto.order} already exists in this guide`
+        );
       }
     }
 
@@ -104,10 +114,13 @@ export class ModulesService {
     await this.moduleRepository.softDelete(id);
   }
 
-  async reorderModules(guideId: number, moduleOrders: { id: number; order: number }[]): Promise<Module[]> {
+  async reorderModules(
+    guideId: number,
+    moduleOrders: { id: number; order: number }[]
+  ): Promise<Module[]> {
     const guide = await this.guideRepository.findOne({
       where: { id: guideId },
-      relations: ['modules']
+      relations: ["modules"],
     });
 
     if (!guide) {

@@ -1,13 +1,13 @@
-import { IsString, IsBoolean, IsNumber, MinLength } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { IsString, IsBoolean, IsNumber, MinLength } from "class-validator";
+import { ApiProperty } from "@nestjs/swagger";
 
-export class CreateRelationalPairDto {
-  @ApiProperty({ example: 'Evaporation' })
+export class CreateRelationalPairDto2 {
+  @ApiProperty({ example: "Evaporation" })
   @IsString()
   @MinLength(1)
   leftItem: string;
 
-  @ApiProperty({ example: 'Water turns into vapor' })
+  @ApiProperty({ example: "Water turns into vapor" })
   @IsString()
   @MinLength(1)
   rightItem: string;
@@ -16,7 +16,7 @@ export class CreateRelationalPairDto {
   @IsBoolean()
   correctPair: boolean;
 
-  @ApiProperty({ example: 1, description: 'Block ID' })
+  @ApiProperty({ example: 1, description: "Block ID" })
   @IsNumber()
   blockId: number;
 }

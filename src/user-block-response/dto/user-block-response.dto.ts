@@ -9,6 +9,9 @@ export class UserBlockResponseDto {
   isCorrect: boolean;
 
   @ApiProperty()
+  earnedPoints: number;
+
+  @ApiProperty()
   submittedAt: Date;
 
   @ApiProperty()

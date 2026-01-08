@@ -1,6 +1,6 @@
-import { PartialType, OmitType } from '@nestjs/swagger';
-import { CreateBlockDto } from './create-block.dto';
+import { PartialType, OmitType } from "@nestjs/swagger";
+import { CreateBlockDto2 } from "./create-block.dto";
 
 export class UpdateBlockDto extends PartialType(
-  OmitType(CreateBlockDto, ['moduleId'] as const)
+  OmitType(CreateBlockDto2, ["moduleId"] as const)
 ) {}

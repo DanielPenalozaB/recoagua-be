@@ -352,9 +352,7 @@ export class AuthService {
       throw new BadRequestException('Password setup token has expired');
     }
 
-    // Hash and set the new password
-    const hashedPassword = await this.hashPassword(setPasswordDto.newPassword);
-    await this.usersService.updatePassword(user.id, hashedPassword);
+    await this.usersService.updatePassword(user.id, setPasswordDto.newPassword);
 
     // Clear the password setup token
     await this.usersService.clearPasswordResetToken(user.id);

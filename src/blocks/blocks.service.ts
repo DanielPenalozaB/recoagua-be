@@ -1,14 +1,18 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Block } from './entities/block.entity';
-import { BlockAnswer } from './entities/block-answer.entity';
-import { RelationalPair } from './entities/relational-pair.entity';
-import { Module } from '../modules/entities/module.entity';
-import { CreateBlockDto } from './dto/create-block.dto';
-import { UpdateBlockDto } from './dto/update-block.dto';
-import { CreateBlockAnswerDto } from './dto/create-block-answer.dto';
-import { CreateRelationalPairDto } from './dto/create-relational-pair.dto';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { Block } from "./entities/block.entity";
+import { BlockAnswer } from "./entities/block-answer.entity";
+import { RelationalPair } from "./entities/relational-pair.entity";
+import { Module } from "../modules/entities/module.entity";
+import { CreateBlockDto2 } from "./dto/create-block.dto";
+import { UpdateBlockDto } from "./dto/update-block.dto";
+import { CreateBlockAnswerDto } from "./dto/create-block-answer.dto";
+import { CreateRelationalPairDto2 } from "./dto/create-relational-pair.dto";
 
 @Injectable()
 export class BlocksService {
@@ -20,32 +24,36 @@ export class BlocksService {
     @InjectRepository(RelationalPair)
     private readonly relationalPairRepository: Repository<RelationalPair>,
     @InjectRepository(Module)
-    private readonly moduleRepository: Repository<Module>,
+    private readonly moduleRepository: Repository<Module>
   ) {}
 
-  async create(createBlockDto: CreateBlockDto): Promise<Block> {
+  async create(CreateBlockDto2: CreateBlockDto2): Promise<Block> {
     const module = await this.moduleRepository.findOne({
-      where: { id: createBlockDto.moduleId }
+      where: { id: CreateBlockDto2.moduleId },
     });
 
     if (!module) {
-      throw new NotFoundException(`Module with ID ${createBlockDto.moduleId} not found`);
+      throw new NotFoundException(
+        `Module with ID ${CreateBlockDto2.moduleId} not found`
+      );
     }
 
     // Check for duplicate order within the same module
     const existingBlock = await this.blockRepository.findOne({
       where: {
-        module: { id: createBlockDto.moduleId },
-        order: createBlockDto.order
-      }
+        module: { id: CreateBlockDto2.moduleId },
+        order: CreateBlockDto2.order,
+      },
     });
 
     if (existingBlock) {
-      throw new BadRequestException(`Block with order ${createBlockDto.order} already exists in this module`);
+      throw new BadRequestException(
+        `Block with order ${CreateBlockDto2.order} already exists in this module`
+      );
     }
 
     const block = this.blockRepository.create({
-      ...createBlockDto,
+      ...CreateBlockDto2,
       module,
     });
 
@@ -54,15 +62,15 @@ export class BlocksService {
 
   async findAll(moduleId?: number): Promise<Block[]> {
     const queryBuilder = this.blockRepository
-      .createQueryBuilder('block')
-      .leftJoinAndSelect('block.module', 'module')
-      .leftJoinAndSelect('block.answers', 'answers')
-      .leftJoinAndSelect('block.relationalPairs', 'pairs')
-      .orderBy('block.order', 'ASC')
-      .addOrderBy('answers.order', 'ASC');
+      .createQueryBuilder("block")
+      .leftJoinAndSelect("block.module", "module")
+      .leftJoinAndSelect("block.answers", "answers")
+      .leftJoinAndSelect("block.relationalPairs", "pairs")
+      .orderBy("block.order", "ASC")
+      .addOrderBy("answers.order", "ASC");
 
     if (moduleId) {
-      queryBuilder.where('module.id = :moduleId', { moduleId });
+      queryBuilder.where("module.id = :moduleId", { moduleId });
     }
 
     return await queryBuilder.getMany();
@@ -70,12 +78,12 @@ export class BlocksService {
 
   async findOne(id: number): Promise<Block> {
     const block = await this.blockRepository
-      .createQueryBuilder('block')
-      .leftJoinAndSelect('block.module', 'module')
-      .leftJoinAndSelect('block.answers', 'answers')
-      .leftJoinAndSelect('block.relationalPairs', 'pairs')
-      .where('block.id = :id', { id })
-      .orderBy('answers.order', 'ASC')
+      .createQueryBuilder("block")
+      .leftJoinAndSelect("block.module", "module")
+      .leftJoinAndSelect("block.answers", "answers")
+      .leftJoinAndSelect("block.relationalPairs", "pairs")
+      .where("block.id = :id", { id })
+      .orderBy("answers.order", "ASC")
       .getOne();
 
     if (!block) {
@@ -94,11 +102,13 @@ export class BlocksService {
         where: {
           module: { id: block.module.id },
           order: updateBlockDto.order,
-        }
+        },
       });
 
       if (existingBlock && existingBlock.id !== id) {
-        throw new BadRequestException(`Block with order ${updateBlockDto.order} already exists in this module`);
+        throw new BadRequestException(
+          `Block with order ${updateBlockDto.order} already exists in this module`
+        );
       }
     }
 
@@ -112,13 +122,17 @@ export class BlocksService {
   }
 
   // Block Answer operations
-  async createAnswer(createAnswerDto: CreateBlockAnswerDto): Promise<BlockAnswer> {
+  async createAnswer(
+    createAnswerDto: CreateBlockAnswerDto
+  ): Promise<BlockAnswer> {
     const block = await this.blockRepository.findOne({
-      where: { id: createAnswerDto.blockId }
+      where: { id: createAnswerDto.blockId },
     });
 
     if (!block) {
-      throw new NotFoundException(`Block with ID ${createAnswerDto.blockId} not found`);
+      throw new NotFoundException(
+        `Block with ID ${createAnswerDto.blockId} not found`
+      );
     }
 
     const answer = this.blockAnswerRepository.create({
@@ -129,9 +143,12 @@ export class BlocksService {
     return await this.blockAnswerRepository.save(answer);
   }
 
-  async updateAnswer(id: number, updateData: Partial<CreateBlockAnswerDto>): Promise<BlockAnswer> {
+  async updateAnswer(
+    id: number,
+    updateData: Partial<CreateBlockAnswerDto>
+  ): Promise<BlockAnswer> {
     const answer = await this.blockAnswerRepository.findOne({ where: { id } });
-    
+
     if (!answer) {
       throw new NotFoundException(`Block answer with ID ${id} not found`);
     }
@@ -142,7 +159,7 @@ export class BlocksService {
 
   async removeAnswer(id: number): Promise<void> {
     const answer = await this.blockAnswerRepository.findOne({ where: { id } });
-    
+
     if (!answer) {
       throw new NotFoundException(`Block answer with ID ${id} not found`);
     }
@@ -151,13 +168,17 @@ export class BlocksService {
   }
 
   // Relational Pair operations
-  async createRelationalPair(createPairDto: CreateRelationalPairDto): Promise<RelationalPair> {
+  async createRelationalPair(
+    createPairDto: CreateRelationalPairDto2
+  ): Promise<RelationalPair> {
     const block = await this.blockRepository.findOne({
-      where: { id: createPairDto.blockId }
+      where: { id: createPairDto.blockId },
     });
 
     if (!block) {
-      throw new NotFoundException(`Block with ID ${createPairDto.blockId} not found`);
+      throw new NotFoundException(
+        `Block with ID ${createPairDto.blockId} not found`
+      );
     }
 
     const pair = this.relationalPairRepository.create({
@@ -168,9 +189,12 @@ export class BlocksService {
     return await this.relationalPairRepository.save(pair);
   }
 
-  async updateRelationalPair(id: number, updateData: Partial<CreateRelationalPairDto>): Promise<RelationalPair> {
+  async updateRelationalPair(
+    id: number,
+    updateData: Partial<CreateRelationalPairDto2>
+  ): Promise<RelationalPair> {
     const pair = await this.relationalPairRepository.findOne({ where: { id } });
-    
+
     if (!pair) {
       throw new NotFoundException(`Relational pair with ID ${id} not found`);
     }
@@ -181,7 +205,7 @@ export class BlocksService {
 
   async removeRelationalPair(id: number): Promise<void> {
     const pair = await this.relationalPairRepository.findOne({ where: { id } });
-    
+
     if (!pair) {
       throw new NotFoundException(`Relational pair with ID ${id} not found`);
     }
@@ -189,10 +213,13 @@ export class BlocksService {
     await this.relationalPairRepository.remove(pair);
   }
 
-  async reorderBlocks(moduleId: number, blockOrders: { id: number; order: number }[]): Promise<Block[]> {
+  async reorderBlocks(
+    moduleId: number,
+    blockOrders: { id: number; order: number }[]
+  ): Promise<Block[]> {
     const module = await this.moduleRepository.findOne({
       where: { id: moduleId },
-      relations: ['blocks']
+      relations: ["blocks"],
     });
 
     if (!module) {
