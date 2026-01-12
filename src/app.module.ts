@@ -21,9 +21,15 @@ import { MailModule } from './mail/mail.module';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { dataSourceOptions } from './configs/typeorm.config';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 
 @Module({
   imports: [
+    ThrottlerModule.forRoot([{
+      ttl: 60000, // Time to live in milliseconds (1 minute)
+      limit: 20,  // Maximum 20 requests per minute per IP
+    }]),
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
@@ -48,6 +54,12 @@ import { dataSourceOptions } from './configs/typeorm.config';
     MailModule
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+    AppService
+  ],
 })
 export class AppModule {}

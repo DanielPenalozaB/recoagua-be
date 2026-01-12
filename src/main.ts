@@ -45,6 +45,9 @@ async function bootstrap() {
     },
   });
 
+  const expressApp = app.getHttpAdapter().getInstance();
+  expressApp.set('trust proxy', 1);
+
   await app.listen(port);
 
   console.log(`🚀 Application is running on: http://localhost:${port}`);

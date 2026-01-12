@@ -12,12 +12,14 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagg
 import { UserResponseDto } from '../users/dto/user-response.dto';
 import { LoginResponseDto } from './dto/login-response.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { Throttle } from '@nestjs/throttler';
 
 @ApiTags('Authentication')
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  @Throttle({ default: { limit: 5, ttl: 60000 } }) // Only 5 login attempts per minute
   @Post('login')
   @ApiOperation({ summary: 'User login' })
   @ApiResponse({ status: 200, type: LoginResponseDto })
