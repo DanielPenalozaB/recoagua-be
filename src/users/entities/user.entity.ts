@@ -17,12 +17,21 @@ import { UserChallenge } from 'src/user-challenges/entities/user-challenge.entit
 import { UserBlockResponse } from 'src/user-block-response/entities/user-block-response.entity';
 import { UserProgress } from 'src/user-progress/entities/user-progress.entity';
 import { UserAction } from 'src/user-actions/entities/user-action.entity';
+import { Level } from 'src/levels/entities/level.entity';
 
 @Entity('users')
 export class User {
   @PrimaryGeneratedColumn()
   @ApiProperty({ example: 1, description: 'The unique identifier of the user' })
   id: number;
+
+  @Column({ type: 'int', default: 0 })
+  @ApiProperty({ example: 100, description: 'Total experience points of the user' })
+  experience: number;
+
+  @ManyToOne(() => Level, { nullable: true })
+  @ApiProperty({ type: () => Level, description: 'Current level of the user' })
+  level: Level;
 
   @Column({ type: 'varchar', unique: true, length: 255 })
   @ApiProperty({ example: 'user@example.com', description: 'The email of the user' })

@@ -11,6 +11,8 @@ import { BlockAnswer } from "src/blocks/entities/block-answer.entity";
 import { Module as ModuleEntity } from "src/modules/entities/module.entity";
 import { UserProgress } from "src/user-progress/entities/user-progress.entity";
 import { AuthModule } from "src/auth/auth.module";
+import { UsersModule } from "src/users/users.module";
+import { BadgesModule } from "src/badges/badges.module";
 
 @Module({
   imports: [
@@ -25,6 +27,8 @@ import { AuthModule } from "src/auth/auth.module";
       UserProgress,
     ]),
     AuthModule,
+    UsersModule,
+    BadgesModule
   ],
   controllers: [UserBlockResponseController],
   providers: [UserBlockResponseService],

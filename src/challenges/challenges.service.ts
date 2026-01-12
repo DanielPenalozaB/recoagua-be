@@ -72,7 +72,8 @@ export class ChallengesService {
       status,
       challengeType,
       minScore,
-      maxScore
+      maxScore,
+      name
     } = filterDto;
 
     const queryBuilder = this.challengeRepository
@@ -85,6 +86,10 @@ export class ChallengesService {
     ]);
 
     // Apply filters
+    if (name) {
+      queryBuilder.andWhere('challenge.name = :name', { name });
+    }
+
     if (difficulty) {
       queryBuilder.andWhere('challenge.difficulty = :difficulty', { difficulty });
     }

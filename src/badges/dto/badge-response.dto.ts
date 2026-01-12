@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Status } from 'src/common/enums/status.enum';
+import { BadgeTriggerType } from '../enums/badge-trigger-type.enum';
 
 export class BadgeResponseDto {
   @ApiProperty({
@@ -33,6 +34,18 @@ export class BadgeResponseDto {
     description: 'Requirements to earn this badge',
   })
   requirements: string;
+
+  @ApiProperty({
+    enum: BadgeTriggerType,
+    description: 'Trigger type',
+  })
+  triggerType: BadgeTriggerType;
+
+  @ApiProperty({
+    example: 100,
+    description: 'Threshold',
+  })
+  threshold: number;
 
   @ApiProperty({
     enum: Status,

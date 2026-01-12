@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Status } from 'src/common/enums/status.enum';
-import { In, Not, Repository } from 'typeorm';
+import { In, Not, Repository, LessThanOrEqual } from 'typeorm';
 import { PaginationDto } from '../common/dto/pagination.dto';
 import { applySearch, applySort, paginate } from '../common/utils/pagination.util';
 import { BadgeFilterDto } from './dto/badge-filter.dto';
@@ -15,13 +15,48 @@ import { BulkCreateBadgeDto } from './dto/bulk-create-badge.dto';
 import { CreateBadgeDto } from './dto/create-badge.dto';
 import { UpdateBadgeDto } from './dto/update-badge.dto';
 import { Badge } from './entities/badge.entity';
+import { UserBadge } from 'src/user-progress/entities/user-badge.entity';
+import { BadgeTriggerType } from './enums/badge-trigger-type.enum';
 
 @Injectable()
 export class BadgesService {
   constructor(
     @InjectRepository(Badge)
     private readonly badgeRepository: Repository<Badge>,
+    @InjectRepository(UserBadge)
+    private readonly userBadgeRepository: Repository<UserBadge>,
   ) {}
+
+  async checkAndAwardBadges(userId: number, triggerType: BadgeTriggerType, value: number): Promise<BadgeResponseDto[]> {
+    const badges = await this.badgeRepository.find({
+      where: {
+        triggerType,
+        status: Status.ACTIVE,
+        threshold: LessThanOrEqual(value),
+      },
+    });
+
+    const awardedBadges: BadgeResponseDto[] = [];
+
+    for (const badge of badges) {
+      const exists = await this.userBadgeRepository.findOne({
+        where: {
+          user: { id: userId },
+          badge: { id: badge.id },
+        },
+      });
+
+      if (!exists) {
+        const userBadge = this.userBadgeRepository.create({
+          user: { id: userId } as any,
+          badge,
+        });
+        await this.userBadgeRepository.save(userBadge);
+        awardedBadges.push(this.toResponseDto(badge));
+      }
+    }
+    return awardedBadges;
+  }
 
   async create(createBadgeDto: CreateBadgeDto): Promise<BadgeResponseDto> {
     await this.validateNameUniqueness(createBadgeDto.name);
@@ -220,6 +255,8 @@ export class BadgesService {
       description: badge.description,
       imageUrl: badge.imageUrl,
       requirements: badge.requirements,
+      triggerType: badge.triggerType,
+      threshold: badge.threshold,
       status: badge.status,
       createdAt: badge.createdAt,
       updatedAt: badge.updatedAt,

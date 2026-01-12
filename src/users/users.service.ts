@@ -16,6 +16,9 @@ import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { JwtService } from '@nestjs/jwt';
 import { MailService } from 'src/mail/mail.service';
 
+import { LevelsService } from 'src/levels/levels.service';
+import { LevelResponseDto } from 'src/levels/dto/level-response.dto';
+
 @Injectable()
 export class UsersService {
   constructor(
@@ -25,7 +28,36 @@ export class UsersService {
     private readonly cityRepository: Repository<City>,
     private readonly jwtService: JwtService,
     private readonly mailService: MailService,
+    private readonly levelsService: LevelsService,
   ) {}
+
+  async addExperience(userId: number, points: number): Promise<{ user: UserResponseDto, leveledUp: boolean, newLevel: any }> {
+    const user = await this.userRepository.findOne({ where: { id: userId }, relations: ['level', 'city'] });
+    if (!user) throw new NotFoundException('User not found');
+
+    user.experience = (user.experience || 0) + points;
+    
+    // Check for level up
+    const potentialLevel = await this.levelsService.findLevelByPoints(user.experience);
+    let leveledUp = false;
+    let newLevel: LevelResponseDto | null = null;
+
+    if (potentialLevel && (!user.level || potentialLevel.id !== user.level.id)) {
+      if (!user.level || potentialLevel.id !== user.level.id) {
+        leveledUp = true;
+        newLevel = potentialLevel;
+        user.level = { id: potentialLevel.id } as any;
+      }
+    }
+
+    const savedUser = await this.userRepository.save(user);
+    
+    return {
+      user: this.toResponseDto(savedUser),
+      leveledUp,
+      newLevel
+    };
+  }
 
   async create(createUserDto: CreateUserDto, withPassword = false): Promise<UserResponseDto | UserWithPasswordDto> {
     await this.validateEmailUniqueness(createUserDto.email);
@@ -161,7 +193,7 @@ export class UsersService {
   async findOne(id: number, withPassword = false): Promise<UserResponseDto | UserWithPasswordDto> {
     const user = await this.userRepository.findOne({
       where: { id },
-      relations: ['city'],
+      relations: ['city', 'level'],
     });
 
     if (!user || user.deletedAt) {
@@ -174,6 +206,7 @@ export class UsersService {
   async findByEmail(email: string, withPassword = false): Promise<UserResponseDto | UserWithPasswordDto | null> {
     const query = this.userRepository.createQueryBuilder('user')
       .leftJoinAndSelect('user.city', 'city')
+      .leftJoinAndSelect('user.level', 'level')
       .where('user.email = :email', { email })
       .andWhere('user.deletedAt IS NULL');
 
@@ -309,6 +342,17 @@ export class UsersService {
       language: user.language,
       role: user.role,
       status: user.status,
+      experience: user.experience || 0,
+      level: user.level ? {
+        id: user.level.id,
+        name: user.level.name,
+        description: user.level.description,
+        requiredPoints: user.level.requiredPoints,
+        rewards: user.level.rewards,
+        createdAt: user.level.createdAt,
+        updatedAt: user.level.updatedAt,
+        deletedAt: user.level.deletedAt,
+      } : null,
       city: user.city ? {
         id: user.city.id,
         name: user.city.name,

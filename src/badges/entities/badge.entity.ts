@@ -11,6 +11,8 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Status } from 'src/common/enums/status.enum';
 import { UserBadge } from 'src/user-progress/entities/user-badge.entity';
 
+import { BadgeTriggerType } from '../enums/badge-trigger-type.enum';
+
 @Entity('badges')
 export class Badge {
   @PrimaryGeneratedColumn()
@@ -46,6 +48,24 @@ export class Badge {
     description: 'Requirements to earn this badge',
   })
   requirements: string;
+
+  @Column({
+    type: 'enum',
+    enum: BadgeTriggerType,
+    default: BadgeTriggerType.MANUAL,
+  })
+  @ApiProperty({
+    enum: BadgeTriggerType,
+    description: 'Type of event that triggers this badge',
+  })
+  triggerType: BadgeTriggerType;
+
+  @Column({ type: 'int', default: 0 })
+  @ApiProperty({
+    example: 100,
+    description: 'Threshold value required to trigger the badge (e.g., 100 points)',
+  })
+  threshold: number;
 
   @Column({ type: 'enum', enum: Status, default: Status.ACTIVE })
   @ApiProperty({ enum: Status, description: 'Status of the badge' })

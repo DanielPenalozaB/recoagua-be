@@ -7,6 +7,7 @@ import { City } from '../cities/entities/city.entity';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MailModule } from 'src/mail/mail.module';
+import { LevelsModule } from 'src/levels/levels.module';
 
 @Module({
   imports: [
@@ -19,7 +20,8 @@ import { MailModule } from 'src/mail/mail.module';
       }),
       inject: [ConfigService],
     }),
-    MailModule
+    MailModule,
+    LevelsModule
   ],
   controllers: [UsersController],
   providers: [UsersService],

@@ -2,10 +2,17 @@ import { ApiProperty } from '@nestjs/swagger';
 import { CityResponseDto } from '../../cities/dto/city-response.dto';
 import { UserRole } from '../enums/user-role.enum';
 import { UserStatus } from '../enums/user-status.enum';
+import { LevelResponseDto } from 'src/levels/dto/level-response.dto';
 
 export class UserResponseDto {
   @ApiProperty({ example: 1, description: 'User ID' })
   id: number;
+
+  @ApiProperty({ example: 100, description: 'Total experience points' })
+  experience: number;
+
+  @ApiProperty({ type: () => LevelResponseDto, nullable: true, description: 'Current level' })
+  level: LevelResponseDto | null;
 
   @ApiProperty({ example: 'user@example.com', description: 'User email' })
   email: string;

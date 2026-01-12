@@ -47,6 +47,13 @@ export class UserChallenge {
   })
   completedAt: Date;
 
+  @Column({ default: 0 })
+  @ApiProperty({
+    example: 50,
+    description: 'Points earned from this challenge',
+  })
+  earnedPoints: number;
+
   @CreateDateColumn()
   createdAt: Date;
 }

@@ -15,6 +15,14 @@ export class ChallengeFilterDto extends PaginationQueryDto {
   search?: string;
 
   @ApiProperty({
+    required: false,
+    description: 'Filter by exact name',
+  })
+  @IsString()
+  @IsOptional()
+  name?: string;
+
+  @ApiProperty({
     enum: ChallengeDifficulty,
     required: false,
     description: 'Filter by difficulty',

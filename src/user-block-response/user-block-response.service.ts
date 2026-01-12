@@ -16,6 +16,10 @@ import { Block } from "../blocks/entities/block.entity";
 import { User } from "../users/entities/user.entity";
 import { SubmitBlockResponseDto } from "./dto/submit-block-response.dto";
 import { UserBlockResponse } from "./entities/user-block-response.entity";
+import { UsersService } from "src/users/users.service";
+import { BadgesService } from "src/badges/badges.service";
+import { BadgeTriggerType } from "src/badges/enums/badge-trigger-type.enum";
+import { BadgeResponseDto } from "src/badges/dto/badge-response.dto";
 
 @Injectable()
 export class UserBlockResponseService {
@@ -35,7 +39,9 @@ export class UserBlockResponseService {
     @InjectRepository(Module)
     private readonly moduleRepository: Repository<Module>,
     @InjectRepository(UserProgress)
-    private readonly userProgressRepository: Repository<UserProgress>
+    private readonly userProgressRepository: Repository<UserProgress>,
+    private readonly usersService: UsersService,
+    private readonly badgesService: BadgesService,
   ) {}
 
   async submitResponse(dto: SubmitBlockResponseDto, userId: number) {
@@ -228,18 +234,39 @@ export class UserBlockResponseService {
       },
     });
 
+    let xpResult;
+    let awardedBadges: BadgeResponseDto[] = [];
+
     if (isCorrect && priorCorrectResponses === 0) {
       // Use coercion to ensure we are working with numbers
       const currentPoints = Number(progress.earnedPoints) || 0;
       const newBlockPoints = Number(block.points) || 0;
 
       progress.earnedPoints = currentPoints + newBlockPoints;
+
+      // Award XP to user
+      xpResult = await this.usersService.addExperience(userId, newBlockPoints);
+
+      // Check for POINTS badges
+      const pointBadges = await this.badgesService.checkAndAwardBadges(userId, BadgeTriggerType.POINTS, xpResult.user.experience);
+
+      // Check for BLOCKS_COMPLETED badges
+      const totalBlocks = await this.userBlockResponseRepository.count({
+        where: { user: { id: userId }, isCorrect: true }
+      });
+      // We need to include the current one if not yet counted? 
+      // priorCorrectResponses is 0, so this new one is not in DB yet? 
+      // Ah, savedResponse IS in DB. "savedResponse = await this.userBlockResponseRepository.save(response);"
+      // So count should include it.
+      const blockBadges = await this.badgesService.checkAndAwardBadges(userId, BadgeTriggerType.BLOCKS_COMPLETED, totalBlocks);
+
+      awardedBadges = [...pointBadges, ...blockBadges];
     }
 
     // Determine completion: if number of distinct blocks answered by user for this module equals module.blocks.length -> completed
     // Count distinct responses for this user for blocks of this module
     const blocksInModule = module.blocks || [];
-    const totalBlocks = blocksInModule.length;
+    const totalBlocksCount = blocksInModule.length;
 
     const answeredDistinct = await this.userBlockResponseRepository
       .createQueryBuilder("resp")
@@ -251,7 +278,7 @@ export class UserBlockResponseService {
 
     const answeredCount = parseInt(answeredDistinct.count || "0", 10);
 
-    if (totalBlocks > 0 && answeredCount >= totalBlocks) {
+    if (totalBlocksCount > 0 && answeredCount >= totalBlocksCount) {
       progress.completionStatus = CompletionStatus.COMPLETED;
       progress.completedAt = new Date();
       progress.earnedPoints = module.points;
@@ -265,14 +292,10 @@ export class UserBlockResponseService {
       id: savedResponse.id,
       blockId: block.id,
       isCorrect,
-      earnedPoints,
-      submittedAt: savedResponse.submittedAt,
-      progress: {
-        id: progress.id,
-        completionStatus: progress.completionStatus,
-        earnedPoints: progress.earnedPoints,
-        completedAt: progress.completedAt,
-      },
+      earnedPoints: isCorrect && priorCorrectResponses === 0 ? earnedPoints : 0,
+      leveledUp: (typeof xpResult !== 'undefined') ? xpResult.leveledUp : false,
+      newLevel: (typeof xpResult !== 'undefined') ? xpResult.newLevel : null,
+      awardedBadges: (typeof awardedBadges !== 'undefined') ? awardedBadges : [],
     };
   }
 
