@@ -485,7 +485,7 @@ export class SeedInitialData1768859560413 implements MigrationInterface {
       {
         name: "Defensor de Cali",
         description: "Otorgada por participar en eventos en Cali",
-        imageUrl: "",
+        imageUrl: "https://recoagua.com/badges/cali-defender.png",
         requirements: "Participate in Cali events",
         triggerType: "manual",
         threshold: 0,
@@ -494,7 +494,7 @@ export class SeedInitialData1768859560413 implements MigrationInterface {
       {
         name: "Ahorrador de Agua",
         description: "Otorgada por reducir el consumo de agua visiblemente",
-        imageUrl: "",
+        imageUrl: "https://recoagua.com/badges/water-saver.png",
         requirements: "Reduce water bill",
         triggerType: "manual",
         threshold: 0,

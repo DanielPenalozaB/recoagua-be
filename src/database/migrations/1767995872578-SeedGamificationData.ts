@@ -31,9 +31,9 @@ export class SeedGamificationData1767995872578 implements MigrationInterface {
       await queryRunner.query(`
                 INSERT INTO "badges" (name, description, "imageUrl", requirements, "triggerType", threshold, status)
                 VALUES 
-                ('Primer bloque', 'Completa tu primer bloque de aprendizaje', 'https://api.recoagua.com/assets/badges/first-block.svg', 'Complete 1 block', 'blocks_completed', 1, 'active'),
-                ('Primer cálculo', 'Hiciste tu primer cálculo de consumo de agua', 'https://api.recoagua.com/assets/badges/calculator.svg', 'Complete the Calculadora challenge', 'challenges_completed', 1, 'active'),
-                ('Salvador del agua', 'Alcanzaste 1000 XP', 'https://api.recoagua.com/assets/badges/1000xp.svg', 'Accumulate 1000 XP', 'points', 1000, 'active')
+                ('Primer bloque', 'Completa tu primer bloque de aprendizaje', 'https://recoagua.com/badges/first-block.png', 'Complete 1 block', 'blocks_completed', 1, 'active'),
+                ('Primer cálculo', 'Hiciste tu primer cálculo de consumo de agua', 'https://recoagua.com/badges/first-calculation.png', 'Complete the Calculadora challenge', 'challenges_completed', 1, 'active'),
+                ('Salvador del agua', 'Alcanzaste 1000 XP', 'https://recoagua.com/badges/water-savior.png', 'Accumulate 1000 XP', 'points', 1000, 'active')
             `);
     }
   }
