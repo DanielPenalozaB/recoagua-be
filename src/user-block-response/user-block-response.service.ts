@@ -54,7 +54,7 @@ export class UserBlockResponseService {
 
     const block = await this.blockRepository.findOne({
       where: { id: dto.blockId },
-      relations: ["module", "module.guide", "answers"],
+      relations: ["module", "module.guide", "answers", "relationalPairs"],
     });
     if (!block) {
       throw new NotFoundException(`Block ${dto.blockId} not found`);
@@ -108,22 +108,40 @@ export class UserBlockResponseService {
         break;
 
       case QuestionType.MATCHING:
-        // dto.relationalPairId debe existir para validar
-        if (!dto.relationalPairId) {
-          isCorrect = false;
-          break;
-        }
+        if (dto.relationalPairIds && dto.relationalPairIds.length > 0) {
+          // New logic for multiple pairs
+          const correctPairsIds =
+            block.relationalPairs
+              ?.filter((p) => p.correctPair)
+              .map((p) => p.id) || [];
 
-        // Aquí asumimos que BlockAnswer tiene una relación con RelationalPair
-        // Si tu estructura es diferente, la ajusto con tu modelo real
-        const pair = await this.relationalPairRepository.findOne({
-          where: { id: dto.relationalPairId },
-        });
+          // Ensure strict number comparison
+          const submittedPairs = new Set(
+            dto.relationalPairIds.map((id) => Number(id)),
+          );
+          const correctPairsSet = new Set(correctPairsIds);
 
-        if (!pair) {
-          isCorrect = false;
+          // Must match exactly (find all correct pairs)
+          if (submittedPairs.size !== correctPairsSet.size) {
+            isCorrect = false;
+          } else {
+            isCorrect = [...correctPairsSet].every((id) =>
+              submittedPairs.has(id),
+            );
+          }
+        } else if (dto.relationalPairId) {
+          // Legacy logic
+          const pair = await this.relationalPairRepository.findOne({
+            where: { id: dto.relationalPairId },
+          });
+
+          if (!pair) {
+            isCorrect = false;
+          } else {
+            isCorrect = pair.correctPair ?? false;
+          }
         } else {
-          isCorrect = pair.correctPair ?? false;
+          isCorrect = false;
         }
         break;
 
@@ -186,6 +204,14 @@ export class UserBlockResponseService {
         customAnswer: dto.customAnswer,
       });
       await this.userAnswerDetailsRepository.save(detail);
+    } else if (dto.relationalPairIds && dto.relationalPairIds.length > 0) {
+      for (const pairId of dto.relationalPairIds) {
+        const detail = this.userAnswerDetailsRepository.create({
+          response: savedResponse,
+          relationalPair: { id: pairId } as any,
+        });
+        await this.userAnswerDetailsRepository.save(detail);
+      }
     } else if (dto.relationalPairId) {
       // If you have relationalPair entity, save it here by looking it up and mapping to UserAnswerDetails.relationalPair
       const detail = this.userAnswerDetailsRepository.create({

@@ -59,14 +59,14 @@ export class SeedEducationalGuides1769188500000 implements MigrationInterface {
                 statement:
                   "¿Cuál es el proceso por el cual el agua pasa de líquido a gas?",
                 points: 25,
-                feedback:
-                  "El sol calienta el agua de océanos y ríos (evaporación) y liberan vapor, convirtiéndola en gas.",
                 questionType: "multiple_choice",
                 answers: [
                   {
                     text: "Evaporación",
                     isCorrect: true,
                     order: 1,
+                    feedback:
+                      "El sol calienta el agua de océanos y ríos (evaporación) y liberan vapor, convirtiéndola en gas.",
                   },
                   {
                     text: "Condensación",

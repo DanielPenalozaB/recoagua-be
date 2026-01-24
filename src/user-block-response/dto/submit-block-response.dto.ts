@@ -1,4 +1,11 @@
-import { IsInt, IsOptional, IsArray, ArrayNotEmpty, IsString, IsBoolean } from 'class-validator';
+import {
+  IsInt,
+  IsOptional,
+  IsArray,
+  ArrayNotEmpty,
+  IsString,
+  IsBoolean,
+} from "class-validator";
 
 export class SubmitBlockResponseDto {
   @IsInt()
@@ -11,6 +18,11 @@ export class SubmitBlockResponseDto {
   @IsOptional()
   @IsString()
   customAnswer?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsInt({ each: true })
+  relationalPairIds?: number[];
 
   @IsOptional()
   @IsInt()
