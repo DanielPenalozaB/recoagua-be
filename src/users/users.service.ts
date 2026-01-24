@@ -522,6 +522,7 @@ export class UsersService {
         "city",
         "progress",
         "progress.guide",
+        "progress.guide.modules",
         "badges",
         "badges.badge",
         "challenges",
@@ -541,20 +542,83 @@ export class UsersService {
       // Sort by required points ascending
       .sort((a, b) => a.requiredPoints - b.requiredPoints);
 
-    const completedGuides = user.progress
-      .filter((p) => p.completionStatus === CompletionStatus.COMPLETED)
-      .map((p) => ({
-        ...p.guide,
-        completedAt: p.completedAt,
-        earnedPoints: p.earnedPoints,
-      }));
+    // Group progress by guide to determine overall status
+    const guideProgressMap = new Map<
+      number,
+      {
+        guide: any;
+        completedModules: number;
+        totalModules: number;
+        startedAt: Date;
+        lastActivityAt: Date; // using completedAt or createdAt
+        totalPointsEarned: number;
+      }
+    >();
 
-    const inProgressGuides = user.progress
-      .filter((p) => p.completionStatus === CompletionStatus.IN_PROGRESS)
-      .map((p) => ({
-        ...p.guide,
-        startedAt: p.createdAt,
-      }));
+    for (const p of user.progress) {
+      if (!p.guide) continue;
+      const gId = p.guide.id;
+
+      if (!guideProgressMap.has(gId)) {
+        // totalModules for this guide
+        const modules = p.guide.modules || [];
+        guideProgressMap.set(gId, {
+          guide: p.guide,
+          completedModules: 0,
+          totalModules: modules.length,
+          startedAt: p.createdAt,
+          lastActivityAt: p.createdAt,
+          totalPointsEarned: 0,
+        });
+      }
+
+      const entry = guideProgressMap.get(gId)!;
+      if (p.completionStatus === CompletionStatus.COMPLETED) {
+        entry.completedModules++;
+        entry.totalPointsEarned += Number(p.earnedPoints) || 0;
+      }
+
+      // Keep earliest start date
+      if (p.createdAt < entry.startedAt) {
+        entry.startedAt = p.createdAt;
+      }
+
+      // Keep latest activity (completedAt or createdAt)
+      const effectiveDate = p.completedAt || p.createdAt;
+      if (effectiveDate > entry.lastActivityAt) {
+        entry.lastActivityAt = effectiveDate;
+      }
+    }
+
+    const completedGuides: any[] = [];
+    const inProgressGuides: any[] = [];
+
+    for (const entry of guideProgressMap.values()) {
+      const {
+        guide,
+        completedModules,
+        totalModules,
+        startedAt,
+        lastActivityAt,
+        totalPointsEarned,
+      } = entry;
+
+      // A guide is completed if all its modules are completed
+      // (Assuming a guide has at least 1 module, otherwise it's trivial)
+      if (totalModules > 0 && completedModules >= totalModules) {
+        completedGuides.push({
+          ...guide,
+          completedAt: lastActivityAt, // Approximate completion time as the last module update
+          earnedPoints: totalPointsEarned, // Sum of module points
+        });
+      } else {
+        // If started but not fully completed
+        inProgressGuides.push({
+          ...guide,
+          startedAt: startedAt,
+        });
+      }
+    }
 
     const badges = user.badges.map((ub) => ({
       ...ub.badge,

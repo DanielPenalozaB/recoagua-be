@@ -237,30 +237,26 @@ export class UserBlockResponseService {
     let xpResult;
     let awardedBadges: BadgeResponseDto[] = [];
 
+    // NOTE: Logic changed. Points are no longer awarded per block.
+    // We strictly wait for module completion to award points.
+    // However, we still track "Blocks Completed" badges incrementally.
+
     if (isCorrect && priorCorrectResponses === 0) {
-      // Use coercion to ensure we are working with numbers
-      const currentPoints = Number(progress.earnedPoints) || 0;
-      const newBlockPoints = Number(block.points) || 0;
-
-      progress.earnedPoints = currentPoints + newBlockPoints;
-
-      // Award XP to user
-      xpResult = await this.usersService.addExperience(userId, newBlockPoints);
-
-      // Check for POINTS badges
-      const pointBadges = await this.badgesService.checkAndAwardBadges(userId, BadgeTriggerType.POINTS, xpResult.user.experience);
-
       // Check for BLOCKS_COMPLETED badges
       const totalBlocks = await this.userBlockResponseRepository.count({
-        where: { user: { id: userId }, isCorrect: true }
+        where: { user: { id: userId }, isCorrect: true },
       });
-      // We need to include the current one if not yet counted? 
-      // priorCorrectResponses is 0, so this new one is not in DB yet? 
+      // We need to include the current one if not yet counted?
+      // priorCorrectResponses is 0, so this new one is not in DB yet?
       // Ah, savedResponse IS in DB. "savedResponse = await this.userBlockResponseRepository.save(response);"
       // So count should include it.
-      const blockBadges = await this.badgesService.checkAndAwardBadges(userId, BadgeTriggerType.BLOCKS_COMPLETED, totalBlocks);
+      const blockBadges = await this.badgesService.checkAndAwardBadges(
+        userId,
+        BadgeTriggerType.BLOCKS_COMPLETED,
+        totalBlocks,
+      );
 
-      awardedBadges = [...pointBadges, ...blockBadges];
+      awardedBadges = [...blockBadges];
     }
 
     // Determine completion: if number of distinct blocks answered by user for this module equals module.blocks.length -> completed
@@ -279,11 +275,35 @@ export class UserBlockResponseService {
     const answeredCount = parseInt(answeredDistinct.count || "0", 10);
 
     if (totalBlocksCount > 0 && answeredCount >= totalBlocksCount) {
-      progress.completionStatus = CompletionStatus.COMPLETED;
-      progress.completedAt = new Date();
-      progress.earnedPoints = module.points;
+      // ONLY award points if the module was not already completed
+      if (progress.completionStatus !== CompletionStatus.COMPLETED) {
+        progress.completionStatus = CompletionStatus.COMPLETED;
+        progress.completedAt = new Date();
+        // Set total module points
+        progress.earnedPoints = module.points;
+
+        // Award XP to user for the entire module
+        xpResult = await this.usersService.addExperience(userId, module.points);
+
+        // Check for POINTS badges now that we have awarded points
+        const pointBadges = await this.badgesService.checkAndAwardBadges(
+          userId,
+          BadgeTriggerType.POINTS,
+          xpResult.user.experience,
+        );
+        awardedBadges = [...awardedBadges, ...pointBadges];
+      }
     } else {
-      progress.completionStatus = CompletionStatus.IN_PROGRESS;
+      // Stay IN_PROGRESS if not all blocks are done
+      // (This prevents reverting to IN_PROGRESS if we erroneously re-calculated,
+      // but typically we only get here if adding a response. If it was COMPLETED,
+      // and answeredCount is still full, it stays COMPLETED.
+      // However, if new blocks were added to the module, it might go back to IN_PROGRESS.
+      // For now, simple logic: if not complete, ensure IN_PROGRESS if it wasn't already COMPLETED?
+      // Or just set to IN_PROGRESS. Let's stick to simple state update.)
+      if (progress.completionStatus !== CompletionStatus.COMPLETED) {
+        progress.completionStatus = CompletionStatus.IN_PROGRESS;
+      }
     }
 
     await this.userProgressRepository.save(progress);
@@ -292,16 +312,22 @@ export class UserBlockResponseService {
       id: savedResponse.id,
       blockId: block.id,
       isCorrect,
-      earnedPoints: isCorrect && priorCorrectResponses === 0 ? earnedPoints : 0,
-      leveledUp: (typeof xpResult !== 'undefined') ? xpResult.leveledUp : false,
-      newLevel: (typeof xpResult !== 'undefined') ? xpResult.newLevel : null,
-      awardedBadges: (typeof awardedBadges !== 'undefined') ? awardedBadges : [],
+      // Return module points if this exact action triggered module completion
+      earnedPoints:
+        progress.completionStatus === CompletionStatus.COMPLETED &&
+        answeredCount >= totalBlocksCount &&
+        (!xpResult || xpResult.user.experience > 0)
+          ? module.points
+          : 0,
+      leveledUp: typeof xpResult !== "undefined" ? xpResult.leveledUp : false,
+      newLevel: typeof xpResult !== "undefined" ? xpResult.newLevel : null,
+      awardedBadges: typeof awardedBadges !== "undefined" ? awardedBadges : [],
     };
   }
 
   async findAll(
     userId?: number,
-    blockId?: number
+    blockId?: number,
   ): Promise<UserBlockResponse[]> {
     const queryBuilder = this.userBlockResponseRepository
       .createQueryBuilder("response")
@@ -332,7 +358,7 @@ export class UserBlockResponseService {
 
     if (!response) {
       throw new NotFoundException(
-        `User block response with ID ${id} not found`
+        `User block response with ID ${id} not found`,
       );
     }
 
@@ -341,7 +367,7 @@ export class UserBlockResponseService {
 
   async findByUserAndBlock(
     userId: number,
-    blockId: number
+    blockId: number,
   ): Promise<UserBlockResponse | null> {
     return await this.userBlockResponseRepository
       .createQueryBuilder("response")
