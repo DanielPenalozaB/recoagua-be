@@ -306,7 +306,6 @@ export class UsersService {
   async confirmUserEmail(userId: number): Promise<void> {
     await this.userRepository.update(userId, {
       emailConfirmed: true,
-      emailConfirmationToken: null,
       status: UserStatus.PENDING,
     });
   }
