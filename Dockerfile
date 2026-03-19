@@ -1,43 +1,39 @@
-# Development stage
-FROM node:20-alpine AS development
-WORKDIR /usr/src/app
-COPY package*.json ./
+# Stage 1: Install dependencies
+FROM node:20-alpine AS deps
+WORKDIR /app
+COPY package.json package-lock.json ./
 RUN npm ci
-COPY . .
-EXPOSE 4000
-CMD ["npm", "run", "start:dev"]
 
-# Build stage
+# Stage 2: Build the app
 FROM node:20-alpine AS builder
-WORKDIR /usr/src/app
-COPY package*.json ./
-RUN npm ci
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npm run build
-
-# Production stage
-FROM node:20-alpine AS production
-WORKDIR /usr/src/app
-
-# Install curl for health checks
-RUN apk add --no-cache curl
-
-# Copy package files and install production dependencies
-COPY package*.json ./
+# Keep only production dependencies to save RAM
 RUN npm ci --only=production && npm cache clean --force
 
-# Copy built application
-COPY --from=builder /usr/src/app/dist ./dist
+# Stage 3: Production runner
+FROM node:20-alpine AS runner
 
-# Create non-root user for security
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nestjs -u 1001 -G nodejs
+# Install curl for Coolify's healthcheck
+RUN apk add --no-cache curl
+
+WORKDIR /app
+ENV NODE_ENV=production
+
+# Create a non-privileged user for security
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nestjs
+
+# Copy pruned node_modules and compiled dist files
+COPY --from=builder --chown=nestjs:nodejs /app/node_modules ./node_modules
+COPY --from=builder --chown=nestjs:nodejs /app/dist ./dist
+COPY --from=builder --chown=nestjs:nodejs /app/package.json ./package.json
+
 USER nestjs
-
-EXPOSE 4000
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:4000/health || exit 1
+EXPOSE 3000
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
 
 CMD ["node", "dist/main"]
