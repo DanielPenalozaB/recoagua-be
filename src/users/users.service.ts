@@ -85,6 +85,7 @@ export class UsersService {
   async create(
     createUserDto: CreateUserDto,
     withPassword = false,
+    sendEmail = true,
   ): Promise<UserResponseDto | UserWithPasswordDto> {
     await this.validateEmailUniqueness(createUserDto.email);
     const city = await this.validateCity(createUserDto.cityId);
@@ -105,11 +106,13 @@ export class UsersService {
 
     const savedUser = await this.userRepository.save(newUser);
 
-    await this.mailService.sendEmailConfirmation(
-      newUser.name,
-      newUser.email,
-      newUser.emailConfirmationToken as string,
-    );
+    if (sendEmail) {
+      await this.mailService.sendEmailConfirmation(
+        newUser.name,
+        newUser.email,
+        newUser.emailConfirmationToken as string,
+      );
+    }
 
     return this.toResponseDto(savedUser, withPassword);
   }

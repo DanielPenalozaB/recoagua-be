@@ -181,7 +181,7 @@ export class AuthService {
       emailConfirmed,
       status,
       ...newUser
-    } = (await this.usersService.create(userData, true)) as UserWithPasswordDto;
+    } = (await this.usersService.create(userData, true, false)) as UserWithPasswordDto;
 
     await this.mailService.sendEmailConfirmation(
       newUser.name,
