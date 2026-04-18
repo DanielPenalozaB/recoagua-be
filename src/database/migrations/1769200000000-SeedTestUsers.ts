@@ -39,7 +39,7 @@ export class SeedTestUsers1769200000000 implements MigrationInterface {
 
     for (const email of emails) {
       await queryRunner.query(
-        `DELETE FROM "user_block_response" WHERE "userId" IN (SELECT id FROM "users" WHERE email = $1)`,
+        `DELETE FROM "user_block_responses" WHERE "userId" IN (SELECT id FROM "users" WHERE email = $1)`,
         [email],
       );
       await queryRunner.query(
