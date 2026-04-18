@@ -27,11 +27,11 @@ export class EnrichEducationalGuides1769300000000 implements MigrationInterface 
           );
           for (const block of blocks) {
             await queryRunner.query(
-              `DELETE FROM "user_answer_details" WHERE "responseId" IN (SELECT id FROM "user_block_response" WHERE "blockId" = $1)`,
+              `DELETE FROM "user_answer_details" WHERE "responseId" IN (SELECT id FROM "user_block_responses" WHERE "blockId" = $1)`,
               [block.id],
             );
             await queryRunner.query(
-              `DELETE FROM "user_block_response" WHERE "blockId" = $1`,
+              `DELETE FROM "user_block_responses" WHERE "blockId" = $1`,
               [block.id],
             );
             await queryRunner.query(
