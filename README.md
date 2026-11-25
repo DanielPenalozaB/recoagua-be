@@ -1,98 +1,70 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# RecoAgua · Back-end (API)
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+API REST de **RecoAgua**, el *Sistema de Gestión para la Recolección de Agua en Hogares de Cali,
+Valle del Cauca*. RecoAgua es una plataforma web educativa que orienta a los hogares en el
+aprovechamiento de agua lluvia para usos no potables. Ofrece guías interactivas, una calculadora
+hídrica, un mapa de zonas de Cali y retos con insignias.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+Este repositorio forma parte del trabajo de grado para optar al título de Ingeniero de Sistemas
+en la **Institución Universitaria Antonio José Camacho (UNIAJC)**, Facultad de Ingenierías (2026).
 
-## Description
+| | |
+| --- | --- |
+| **Autores** | Ismael Yate Calderón · Juan Daniel Peñaloza Brito |
+| **Directora** | Beatriz Eugenia Marín Ospina (Grupo de Investigación GRINTIC) |
+| **Aplicación** | <https://recoagua.com> |
+| **Front-end** | [DanielPenalozaB/recoagua-fe](https://github.com/DanielPenalozaB/recoagua-fe) |
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Tecnologías
 
-## Project setup
+NestJS 11 · TypeScript · TypeORM · PostgreSQL 15 · JWT · Swagger (OpenAPI) · Resend (correo) ·
+Docker · GitHub Actions + Coolify.
+
+## Ejecución local
+
+Requisitos: Node.js ≥ 20.9, npm, Docker y Docker Compose.
 
 ```bash
-$ npm install
+git clone https://github.com/DanielPenalozaB/recoagua-be.git
+cd recoagua-be
+npm install
+cp template.env .env              # completar los valores (ver Manual Técnico, sección 5.1)
+docker compose up -d postgres     # PostgreSQL 15 en el puerto 5432
+npm run migration:run             # esquema y datos semilla
+npm run start:dev
 ```
 
-## Compile and run the project
+- API: <http://localhost:4000>
+- Documentación Swagger: <http://localhost:4000/api>
 
-```bash
-# development
-$ npm run start
+## Scripts principales
 
-# watch mode
-$ npm run start:dev
+| Comando | Descripción |
+| --- | --- |
+| `npm run start:dev` | Servidor en modo desarrollo (watch) |
+| `npm run build` / `npm run start:prod` | Compilación y ejecución en producción |
+| `npm run migration:run` / `migration:revert` | Aplicar o revertir migraciones |
+| `npm run test` / `test:e2e` / `test:cov` | Pruebas unitarias, E2E y cobertura |
+| `npm run lint` / `npm run format` | ESLint y Prettier |
 
-# production mode
-$ npm run start:prod
+## Estructura
+
+```
+src/
+├── configs/              # DataSource de TypeORM
+├── database/migrations/  # Esquema y datos semilla
+├── common/               # Filtros, interceptores, pipes y DTOs compartidos
+├── auth/                 # Autenticación JWT y roles
+└── users/, guides/, modules/, blocks/, challenges/, badges/, zone/, …  # Módulos de dominio
 ```
 
-## Run tests
+## Despliegue
 
-```bash
-# unit tests
-$ npm run test
+Cada *push* a `master` ejecuta `.github/workflows/deploy.yml`, que construye la imagen
+`ghcr.io/danielpenalozab/recoagua-be:latest`, la publica en GitHub Container Registry y notifica
+a Coolify para desplegarla.
 
-# e2e tests
-$ npm run test:e2e
+## Documentación
 
-# test coverage
-$ npm run test:cov
-```
-
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ npm install -g mau
-$ mau deploy
-```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+Los detalles de arquitectura, variables de entorno, migraciones, Docker y CI/CD están en el
+**Manual Técnico de Implementación**, entregado con el trabajo de grado.
